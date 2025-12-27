@@ -5,7 +5,7 @@ import os
 import streamlit as st
 from typing import List, Optional
 from dataclasses import dataclass
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 
 # Попытка импорта C++ моста (может не работать без библиотеки)
 try:
@@ -30,10 +30,11 @@ class DisplayResult:
 class SearchApp:
     """Streamlit приложение для поиска."""
     
-    def __init__(self):
+    def __init__(self, progress_callback=None):
         self.mongo_uri = os.getenv("MONGO_URI", "mongodb://mongodb:27017")
         self.db_name = os.getenv("DB_NAME", "poetry_search")
         self.lib_path = os.getenv("LIB_PATH", None)
+        self.progress_callback = progress_callback
         
         self._init_mongo()
         self._init_search_engine()
@@ -46,6 +47,7 @@ class SearchApp:
             self.db = self.mongo_client[self.db_name]
             self.collection = self.db["poems"]
             self.mongo_available = True
+            print("MongoDB connected successfully")
         except Exception as e:
             print(f"MongoDB not available: {e}")
             self.mongo_available = False
@@ -57,6 +59,7 @@ class SearchApp:
             try:
                 self.search_engine = SearchEngine(lib_path=self.lib_path)
                 self.engine_available = True
+                print("C++ search engine initialized")
                 
                 # Если MongoDB доступна, загружаем документы в индекс
                 if self.mongo_available and self.search_engine.get_document_count() == 0:
@@ -74,16 +77,51 @@ class SearchApp:
         if self.collection is None or not self.search_engine:
             return
         
+        print(f"Starting to index documents (limit: {limit})...")
         cursor = self.collection.find().limit(limit)
-        for doc in cursor:
+        
+        # Получаем общее количество для прогресс-бара
+        total = min(limit, self.collection.count_documents({}))
+        
+        # Batch операции для MongoDB
+        batch_size = 500
+        bulk_operations = []
+        
+        for idx, doc in enumerate(cursor, 1):
             content = doc.get("text", "")
             title = doc.get("title", "")
+            
             if content:
+                # Добавляем в C++ индекс
                 cpp_id = self.search_engine.add_document(content, title)
-                self.collection.update_one(
-                    {"_id": doc["_id"]},
-                    {"$set": {"cpp_doc_id": cpp_id}}
+                
+                # Накапливаем bulk операции
+                bulk_operations.append(
+                    UpdateOne(
+                        {"_id": doc["_id"]},
+                        {"$set": {"cpp_doc_id": cpp_id}}
+                    )
                 )
+                
+                # Выполняем batch обновление
+                if len(bulk_operations) >= batch_size:
+                    self.collection.bulk_write(bulk_operations, ordered=False)
+                    bulk_operations = []
+                
+                # Обновляем прогресс
+                if idx % 1000 == 0:
+                    progress = idx / total
+                    print(f"Indexed {idx}/{total} documents ({progress*100:.1f}%)")
+                    if self.progress_callback:
+                        self.progress_callback(progress, f"Индексировано {idx}/{total} документов")
+        
+        # Дозаписываем оставшиеся операции
+        if bulk_operations:
+            self.collection.bulk_write(bulk_operations, ordered=False)
+        
+        print(f"Indexing complete! Total indexed: {self.search_engine.get_document_count()}")
+        if self.progress_callback:
+            self.progress_callback(1.0, f"Готово! Индексировано {self.search_engine.get_document_count()} документов")
     
     def search_tfidf(self, query: str, top_k: int = 10) -> List[DisplayResult]:
         """TF-IDF поиск."""
@@ -163,8 +201,20 @@ def main():
     
     # Инициализация приложения
     if "app" not in st.session_state:
-        with st.spinner("Инициализация поисковой системы..."):
-            st.session_state.app = SearchApp()
+        # Создаём progress bar
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        def update_progress(progress: float, text: str):
+            progress_bar.progress(progress)
+            status_text.text(text)
+        
+        status_text.text("Подключение к базе данных...")
+        st.session_state.app = SearchApp(progress_callback=update_progress)
+        
+        # Очищаем UI после инициализации
+        progress_bar.empty()
+        status_text.empty()
     
     app = st.session_state.app
     
