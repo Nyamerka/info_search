@@ -69,7 +69,7 @@ class SearchApp:
             self.search_engine = None
             self.engine_available = False
     
-    def _load_index_from_mongo(self, limit: int = 10000):
+    def _load_index_from_mongo(self, limit: int = 50000):
         """Загружает документы из MongoDB в C++ индекс."""
         if self.collection is None or not self.search_engine:
             return
