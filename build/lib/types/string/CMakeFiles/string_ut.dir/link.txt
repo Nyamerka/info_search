@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/string_ut.dir/ut/string_ut.cpp.o -o string_ut  ../../libgtest_main.a ../../libgtest.a

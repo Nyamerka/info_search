@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/stemmer_ut.dir/stemmer_ut.cpp.o -o stemmer_ut  ../../libgtest_main.a ../../libgtest.a

@@ -1,5 +1,0 @@
-if(EXISTS "/Users/nyamerka/Desktop/info_search/build/search_system/ut/search_system_ut[1]_tests.cmake")
-  include("/Users/nyamerka/Desktop/info_search/build/search_system/ut/search_system_ut[1]_tests.cmake")
-else()
-  add_test(search_system_ut_NOT_BUILT search_system_ut_NOT_BUILT)
-endif()

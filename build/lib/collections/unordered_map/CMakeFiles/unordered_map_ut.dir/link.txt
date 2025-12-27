@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/unordered_map_ut.dir/ut/unordered_map_ut.cpp.o -o unordered_map_ut  ../../libgtest_main.a ../../libgtest.a

@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/unordered_set_ut.dir/ut/unordered_set_ut.cpp.o -o unordered_set_ut  ../../libgtest_main.a ../../libgtest.a

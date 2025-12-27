@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -dynamiclib -Wl,-headerpad_max_install_names -o libsearch_engine.dylib -install_name @rpath/libsearch_engine.dylib CMakeFiles/search_engine.dir/c_api.cpp.o

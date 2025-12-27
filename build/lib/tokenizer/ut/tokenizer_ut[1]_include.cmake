@@ -1,5 +1,0 @@
-if(EXISTS "/Users/nyamerka/Desktop/info_search/build/lib/tokenizer/ut/tokenizer_ut[1]_tests.cmake")
-  include("/Users/nyamerka/Desktop/info_search/build/lib/tokenizer/ut/tokenizer_ut[1]_tests.cmake")
-else()
-  add_test(tokenizer_ut_NOT_BUILT tokenizer_ut_NOT_BUILT)
-endif()

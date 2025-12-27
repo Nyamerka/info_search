@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/set_ut.dir/ut/set_ut.cpp.o -o set_ut  ../../libgtest_main.a ../../libgtest.a

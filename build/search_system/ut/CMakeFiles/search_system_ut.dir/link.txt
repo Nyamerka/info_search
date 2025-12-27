@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/search_system_ut.dir/search_system_ut.cpp.o -o search_system_ut  ../../lib/libgtest_main.a ../../lib/libgtest.a
