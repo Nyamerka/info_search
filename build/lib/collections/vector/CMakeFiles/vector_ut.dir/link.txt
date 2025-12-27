@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/vector_ut.dir/ut/vector_ut.cpp.o -o vector_ut  ../../libgtest_main.a ../../libgtest.a

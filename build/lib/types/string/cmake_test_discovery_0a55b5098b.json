@@ -1,0 +1,192 @@
+{
+  "tests": 36,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TString",
+      "tests": 36,
+      "testsuite": [
+        {
+          "name": "DefaultConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 7
+        },
+        {
+          "name": "CStringConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 14
+        },
+        {
+          "name": "CStringWithLengthConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 20
+        },
+        {
+          "name": "CharCountConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 26
+        },
+        {
+          "name": "CopyConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 32
+        },
+        {
+          "name": "MoveConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 41
+        },
+        {
+          "name": "CopyAssignment",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 49
+        },
+        {
+          "name": "MoveAssignment",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 56
+        },
+        {
+          "name": "CStringAssignment",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 64
+        },
+        {
+          "name": "At",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 70
+        },
+        {
+          "name": "SubscriptOperator",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 77
+        },
+        {
+          "name": "FrontBack",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 84
+        },
+        {
+          "name": "Iterators",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 90
+        },
+        {
+          "name": "RangeBasedFor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 99
+        },
+        {
+          "name": "Reserve",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 108
+        },
+        {
+          "name": "Clear",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 115
+        },
+        {
+          "name": "PushBack",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 122
+        },
+        {
+          "name": "PopBack",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 129
+        },
+        {
+          "name": "Append",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 135
+        },
+        {
+          "name": "AppendString",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 141
+        },
+        {
+          "name": "AppendChar",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 148
+        },
+        {
+          "name": "PlusEqual",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 154
+        },
+        {
+          "name": "Concatenation",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 162
+        },
+        {
+          "name": "ConcatenationWithCString",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 169
+        },
+        {
+          "name": "Find",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 177
+        },
+        {
+          "name": "RFind",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 185
+        },
+        {
+          "name": "SubStr",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 191
+        },
+        {
+          "name": "Compare",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 200
+        },
+        {
+          "name": "StartsWith",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 209
+        },
+        {
+          "name": "EndsWith",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 216
+        },
+        {
+          "name": "ComparisonOperators",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 223
+        },
+        {
+          "name": "ComparisonWithCString",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 238
+        },
+        {
+          "name": "Swap",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 245
+        },
+        {
+          "name": "Hash",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 253
+        },
+        {
+          "name": "LongString",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 261
+        },
+        {
+          "name": "EmptyString",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/types\/string\/ut\/string_ut.cpp",
+          "line": 269
+        }
+      ]
+    }
+  ]
+}

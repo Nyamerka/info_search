@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/heap_ut.dir/heap_ut.cpp.o -o heap_ut  ../../../libgtest_main.a ../../../libgtest.a

@@ -1,0 +1,5 @@
+if(EXISTS "/Users/nyamerka/Desktop/info_search/build/lib/types/string/string_ut[1]_tests.cmake")
+  include("/Users/nyamerka/Desktop/info_search/build/lib/types/string/string_ut[1]_tests.cmake")
+else()
+  add_test(string_ut_NOT_BUILT string_ut_NOT_BUILT)
+endif()

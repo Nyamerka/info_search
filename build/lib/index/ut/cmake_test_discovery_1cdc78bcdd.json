@@ -1,0 +1,141 @@
+{
+  "tests": 21,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TInvertedIndex",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "AddDocument",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 9
+        },
+        {
+          "name": "AddDocumentIterators",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 22
+        },
+        {
+          "name": "GetPostingList",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 36
+        },
+        {
+          "name": "TermFrequency",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "name": "TBooleanSearch",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "SingleTerm",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 71
+        },
+        {
+          "name": "AndSearch",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 90
+        },
+        {
+          "name": "AndSearchIterators",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 119
+        },
+        {
+          "name": "OrSearch",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 144
+        },
+        {
+          "name": "AndNotSearch",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 170
+        }
+      ]
+    },
+    {
+      "name": "TTfIdf",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "ComputeTF",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 197
+        },
+        {
+          "name": "ComputeIDF",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 213
+        },
+        {
+          "name": "Search",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 237
+        },
+        {
+          "name": "SearchRanking",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 268
+        },
+        {
+          "name": "SearchIteratorOverload",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 294
+        }
+      ]
+    },
+    {
+      "name": "TTextPipeline",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "BasicProcess",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 320
+        },
+        {
+          "name": "WithStemming",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 329
+        },
+        {
+          "name": "NormalizeTerm",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 341
+        }
+      ]
+    },
+    {
+      "name": "TSearchEngine",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "AddAndSearch",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 348
+        },
+        {
+          "name": "BooleanSearch",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 360
+        },
+        {
+          "name": "WithTitle",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 377
+        },
+        {
+          "name": "Clear",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/index\/ut\/boolean_index_ut.cpp",
+          "line": 386
+        }
+      ]
+    }
+  ]
+}

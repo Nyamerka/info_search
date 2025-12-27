@@ -1,0 +1,42 @@
+{
+  "tests": 6,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TLzw",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "EmptyString",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/lzw\/ut\/lzw_ut.cpp",
+          "line": 9
+        },
+        {
+          "name": "RoundTripSimple",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/lzw\/ut\/lzw_ut.cpp",
+          "line": 17
+        },
+        {
+          "name": "RoundTripLong",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/lzw\/ut\/lzw_ut.cpp",
+          "line": 25
+        },
+        {
+          "name": "CompressionHelpsOnRepetition",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/lzw\/ut\/lzw_ut.cpp",
+          "line": 36
+        },
+        {
+          "name": "IteratorOverload",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/lzw\/ut\/lzw_ut.cpp",
+          "line": 48
+        },
+        {
+          "name": "BinaryLikeData",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/lzw\/ut\/lzw_ut.cpp",
+          "line": 56
+        }
+      ]
+    }
+  ]
+}

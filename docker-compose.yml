@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: poetry_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=poetry_search
+    networks:
+      - search_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  search_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poetry_search_app
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data:ro
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - DB_NAME=poetry_search
+      - LIB_PATH=/app/lib/libsearch_engine.so
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - search_network
+
+  data_loader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poetry_data_loader
+    command: ["python", "server/data_loader.py", "--jsonl", "/app/data/poetry50k.dedup.jsonl", "--limit", "50000"]
+    volumes:
+      - ./data:/app/data:ro
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - DB_NAME=poetry_search
+      - LIB_PATH=/app/lib/libsearch_engine.so
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - search_network
+    profiles:
+      - loader
+
+volumes:
+  mongodb_data:
+
+networks:
+  search_network:
+    driver: bridge
+

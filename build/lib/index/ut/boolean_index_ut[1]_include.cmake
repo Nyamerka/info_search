@@ -1,0 +1,5 @@
+if(EXISTS "/Users/nyamerka/Desktop/info_search/build/lib/index/ut/boolean_index_ut[1]_tests.cmake")
+  include("/Users/nyamerka/Desktop/info_search/build/lib/index/ut/boolean_index_ut[1]_tests.cmake")
+else()
+  add_test(boolean_index_ut_NOT_BUILT boolean_index_ut_NOT_BUILT)
+endif()

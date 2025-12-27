@@ -1,0 +1,122 @@
+{
+  "tests": 22,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TUnorderedMap",
+      "tests": 22,
+      "testsuite": [
+        {
+          "name": "DefaultConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 19
+        },
+        {
+          "name": "BucketCountConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 25
+        },
+        {
+          "name": "InitializerListConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 30
+        },
+        {
+          "name": "CopyConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 38
+        },
+        {
+          "name": "MoveConstructor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 46
+        },
+        {
+          "name": "CopyAssignment",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 53
+        },
+        {
+          "name": "MoveAssignment",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 61
+        },
+        {
+          "name": "At",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 69
+        },
+        {
+          "name": "SubscriptOperator",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 76
+        },
+        {
+          "name": "Insert",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 89
+        },
+        {
+          "name": "Erase",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 100
+        },
+        {
+          "name": "Clear",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 108
+        },
+        {
+          "name": "Find",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 115
+        },
+        {
+          "name": "Contains",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 126
+        },
+        {
+          "name": "Count",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 133
+        },
+        {
+          "name": "Iterators",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 139
+        },
+        {
+          "name": "Swap",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 151
+        },
+        {
+          "name": "LoadFactor",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 161
+        },
+        {
+          "name": "Rehash",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 168
+        },
+        {
+          "name": "StringKeys",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 180
+        },
+        {
+          "name": "CollisionHandling",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 192
+        },
+        {
+          "name": "ManyElements",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/collections\/unordered_map\/ut\/unordered_map_ut.cpp",
+          "line": 203
+        }
+      ]
+    }
+  ]
+}

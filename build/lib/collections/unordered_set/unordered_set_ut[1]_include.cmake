@@ -1,0 +1,5 @@
+if(EXISTS "/Users/nyamerka/Desktop/info_search/build/lib/collections/unordered_set/unordered_set_ut[1]_tests.cmake")
+  include("/Users/nyamerka/Desktop/info_search/build/lib/collections/unordered_set/unordered_set_ut[1]_tests.cmake")
+else()
+  add_test(unordered_set_ut_NOT_BUILT unordered_set_ut_NOT_BUILT)
+endif()

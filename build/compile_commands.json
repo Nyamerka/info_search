@@ -1,0 +1,128 @@
+[
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-build/googlemock",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -I/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock/include -I/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=c++17 -arch arm64  -DGTEST_HAS_PTHREAD=1   -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
+  "file": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
+  "output": "_deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-build/googlemock",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=c++17 -arch arm64  -DGTEST_HAS_PTHREAD=1   -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
+  "file": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
+  "output": "_deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-build/googletest",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -I/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -I/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=c++17 -arch arm64  -DGTEST_HAS_PTHREAD=1   -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/src/gtest-all.cc",
+  "file": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/src/gtest-all.cc",
+  "output": "_deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-build/googletest",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=c++17 -arch arm64  -DGTEST_HAS_PTHREAD=1   -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/src/gtest_main.cc",
+  "file": "/Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/src/gtest_main.cc",
+  "output": "_deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/types/string",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/string_ut.dir/ut/string_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/types/string/ut/string_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/types/string/ut/string_ut.cpp",
+  "output": "lib/types/string/CMakeFiles/string_ut.dir/ut/string_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/vector",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/vector_ut.dir/ut/vector_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/vector/ut/vector_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/vector/ut/vector_ut.cpp",
+  "output": "lib/collections/vector/CMakeFiles/vector_ut.dir/ut/vector_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/list",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/list_ut.dir/ut/list_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/list/ut/list_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/list/ut/list_ut.cpp",
+  "output": "lib/collections/list/CMakeFiles/list_ut.dir/ut/list_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/unordered_map",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/unordered_map_ut.dir/ut/unordered_map_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/unordered_map/ut/unordered_map_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/unordered_map/ut/unordered_map_ut.cpp",
+  "output": "lib/collections/unordered_map/CMakeFiles/unordered_map_ut.dir/ut/unordered_map_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/unordered_set",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/unordered_set_ut.dir/ut/unordered_set_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/unordered_set/ut/unordered_set_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/unordered_set/ut/unordered_set_ut.cpp",
+  "output": "lib/collections/unordered_set/CMakeFiles/unordered_set_ut.dir/ut/unordered_set_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/map",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/map_ut.dir/ut/map_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/map/ut/map_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/map/ut/map_ut.cpp",
+  "output": "lib/collections/map/CMakeFiles/map_ut.dir/ut/map_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/set",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/set_ut.dir/ut/set_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/set/ut/set_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/set/ut/set_ut.cpp",
+  "output": "lib/collections/set/CMakeFiles/set_ut.dir/ut/set_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/queue/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/queue_ut.dir/queue_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/queue/ut/queue_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/queue/ut/queue_ut.cpp",
+  "output": "lib/collections/queue/ut/CMakeFiles/queue_ut.dir/queue_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/deque/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/deque_ut.dir/deque_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/deque/ut/deque_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/deque/ut/deque_ut.cpp",
+  "output": "lib/collections/deque/ut/CMakeFiles/deque_ut.dir/deque_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/collections/heap/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/heap_ut.dir/heap_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/collections/heap/ut/heap_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/collections/heap/ut/heap_ut.cpp",
+  "output": "lib/collections/heap/ut/CMakeFiles/heap_ut.dir/heap_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/tokenizer/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/tokenizer_ut.dir/tokenizer_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/tokenizer/ut/tokenizer_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/tokenizer/ut/tokenizer_ut.cpp",
+  "output": "lib/tokenizer/ut/CMakeFiles/tokenizer_ut.dir/tokenizer_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/stemmer/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/stemmer_ut.dir/stemmer_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/stemmer/ut/stemmer_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/stemmer/ut/stemmer_ut.cpp",
+  "output": "lib/stemmer/ut/CMakeFiles/stemmer_ut.dir/stemmer_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/index/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/boolean_index_ut.dir/boolean_index_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/index/ut/boolean_index_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/index/ut/boolean_index_ut.cpp",
+  "output": "lib/index/ut/CMakeFiles/boolean_index_ut.dir/boolean_index_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/zipf/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/zipf_ut.dir/zipf_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/zipf/ut/zipf_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/zipf/ut/zipf_ut.cpp",
+  "output": "lib/zipf/ut/CMakeFiles/zipf_ut.dir/zipf_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/lib/lzw/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/lzw_ut.dir/lzw_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/lib/lzw/ut/lzw_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/lib/lzw/ut/lzw_ut.cpp",
+  "output": "lib/lzw/ut/CMakeFiles/lzw_ut.dir/lzw_ut.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/search_system",
+  "command": "/usr/bin/c++ -Dsearch_engine_EXPORTS -I/Users/nyamerka/Desktop/info_search -std=gnu++17 -arch arm64 -fPIC -o CMakeFiles/search_engine.dir/c_api.cpp.o -c /Users/nyamerka/Desktop/info_search/search_system/c_api.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/search_system/c_api.cpp",
+  "output": "search_system/CMakeFiles/search_engine.dir/c_api.cpp.o"
+},
+{
+  "directory": "/Users/nyamerka/Desktop/info_search/build/search_system/ut",
+  "command": "/usr/bin/c++  -I/Users/nyamerka/Desktop/info_search -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest/include -isystem /Users/nyamerka/Desktop/info_search/build/_deps/googletest-src/googletest -std=gnu++17 -arch arm64 -o CMakeFiles/search_system_ut.dir/search_system_ut.cpp.o -c /Users/nyamerka/Desktop/info_search/search_system/ut/search_system_ut.cpp",
+  "file": "/Users/nyamerka/Desktop/info_search/search_system/ut/search_system_ut.cpp",
+  "output": "search_system/ut/CMakeFiles/search_system_ut.dir/search_system_ut.cpp.o"
+}
+]

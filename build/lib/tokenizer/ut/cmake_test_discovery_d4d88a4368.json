@@ -1,0 +1,112 @@
+{
+  "tests": 20,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TTokenizer",
+      "tests": 20,
+      "testsuite": [
+        {
+          "name": "BasicTokenization",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 8
+        },
+        {
+          "name": "PreservesPosition",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 17
+        },
+        {
+          "name": "HandlesNumbers",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 28
+        },
+        {
+          "name": "SkipsNumbers",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 41
+        },
+        {
+          "name": "HandlesPunctuation",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 50
+        },
+        {
+          "name": "SkipsPunctuation",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 64
+        },
+        {
+          "name": "LowerCase",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 73
+        },
+        {
+          "name": "PreserveCase",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 82
+        },
+        {
+          "name": "MinTokenLength",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 94
+        },
+        {
+          "name": "EmptyInput",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 106
+        },
+        {
+          "name": "WhitespaceOnly",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 112
+        },
+        {
+          "name": "TokenizeToStrings",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 118
+        },
+        {
+          "name": "ToLower",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 128
+        },
+        {
+          "name": "ToUpper",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 134
+        },
+        {
+          "name": "Normalize",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 140
+        },
+        {
+          "name": "Trim",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 145
+        },
+        {
+          "name": "Split",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 151
+        },
+        {
+          "name": "Join",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 160
+        },
+        {
+          "name": "ComplexText",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 169
+        },
+        {
+          "name": "HyphenatedWords",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/tokenizer\/ut\/tokenizer_ut.cpp",
+          "line": 178
+        }
+      ]
+    }
+  ]
+}

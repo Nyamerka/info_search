@@ -1,0 +1,10 @@
+add_subdirectory(vector)
+add_subdirectory(list)
+add_subdirectory(unordered_map)
+add_subdirectory(unordered_set)
+add_subdirectory(map)
+add_subdirectory(set)
+add_subdirectory(queue)
+add_subdirectory(deque)
+add_subdirectory(heap)
+

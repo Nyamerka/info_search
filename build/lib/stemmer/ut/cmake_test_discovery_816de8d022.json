@@ -1,0 +1,203 @@
+{
+  "tests": 37,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TPorterStemmer",
+      "tests": 17,
+      "testsuite": [
+        {
+          "name": "BasicStemming",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 8
+        },
+        {
+          "name": "PluralForms",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 16
+        },
+        {
+          "name": "PastTense",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 26
+        },
+        {
+          "name": "IngForm",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 33
+        },
+        {
+          "name": "ShortWords",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 40
+        },
+        {
+          "name": "Step2Suffixes",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 48
+        },
+        {
+          "name": "Step3Suffixes",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 56
+        },
+        {
+          "name": "StemAll",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 64
+        },
+        {
+          "name": "CaseInsensitive",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 80
+        },
+        {
+          "name": "DoubleConsonants",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 154
+        },
+        {
+          "name": "ComplexSuffixes",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 162
+        },
+        {
+          "name": "Step4Removal",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 171
+        },
+        {
+          "name": "Step5Processing",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 182
+        },
+        {
+          "name": "YEnding",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 190
+        },
+        {
+          "name": "EdgeCases",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 197
+        },
+        {
+          "name": "LongWords",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 206
+        },
+        {
+          "name": "SpecificPorterExamples",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 332
+        }
+      ]
+    },
+    {
+      "name": "TLemmatizer",
+      "tests": 20,
+      "testsuite": [
+        {
+          "name": "IrregularVerbs",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 88
+        },
+        {
+          "name": "IrregularNouns",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 98
+        },
+        {
+          "name": "IrregularAdjectives",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 108
+        },
+        {
+          "name": "RegularWords",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 117
+        },
+        {
+          "name": "LemmatizeAll",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 124
+        },
+        {
+          "name": "CaseInsensitive",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 140
+        },
+        {
+          "name": "CustomDictionary",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 147
+        },
+        {
+          "name": "ModalVerbs",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 214
+        },
+        {
+          "name": "PastParticiples",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 223
+        },
+        {
+          "name": "LatinPluralNouns",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 234
+        },
+        {
+          "name": "GreekPluralNouns",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 244
+        },
+        {
+          "name": "IrregularPluralAnimals",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 253
+        },
+        {
+          "name": "UnchangedPlurals",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 262
+        },
+        {
+          "name": "CompoundVerbs",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 273
+        },
+        {
+          "name": "StrongVerbs",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 282
+        },
+        {
+          "name": "WeakVerbs",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 291
+        },
+        {
+          "name": "MixedForms",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 300
+        },
+        {
+          "name": "CapitalizationPreservation",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 317
+        },
+        {
+          "name": "EmptyAndShortInputs",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 325
+        },
+        {
+          "name": "MultipleWordProcessing",
+          "file": "\/Users\/nyamerka\/Desktop\/info_search\/lib\/stemmer\/ut\/stemmer_ut.cpp",
+          "line": 341
+        }
+      ]
+    }
+  ]
+}
