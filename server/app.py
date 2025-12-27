@@ -2,10 +2,21 @@
 Streamlit UI для поисковой системы по поэзии.
 """
 import os
+import logging
 import streamlit as st
 from typing import List, Optional
 from dataclasses import dataclass
 from pymongo import MongoClient, UpdateOne
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('search_app.log')
+    ]
+)
 
 # Попытка импорта C++ моста (может не работать без библиотеки)
 try:
@@ -35,6 +46,7 @@ class SearchApp:
         self.db_name = os.getenv("DB_NAME", "poetry_search")
         self.lib_path = os.getenv("LIB_PATH", None)
         self.progress_callback = progress_callback
+        self.logger = logging.getLogger(__name__)
         
         self._init_mongo()
         self._init_search_engine()
@@ -47,9 +59,9 @@ class SearchApp:
             self.db = self.mongo_client[self.db_name]
             self.collection = self.db["poems"]
             self.mongo_available = True
-            print("MongoDB connected successfully")
+            self.logger.info("MongoDB connected successfully")
         except Exception as e:
-            print(f"MongoDB not available: {e}")
+            self.logger.error(f"MongoDB not available: {e}")
             self.mongo_available = False
             self.collection = None
     
@@ -59,13 +71,13 @@ class SearchApp:
             try:
                 self.search_engine = SearchEngine(lib_path=self.lib_path)
                 self.engine_available = True
-                print("C++ search engine initialized")
+                self.logger.info("C++ search engine initialized")
                 
                 # Если MongoDB доступна, загружаем документы в индекс
                 if self.mongo_available and self.search_engine.get_document_count() == 0:
                     self._load_index_from_mongo()
             except Exception as e:
-                print(f"Search engine error: {e}")
+                self.logger.error(f"Search engine error: {e}")
                 self.search_engine = None
                 self.engine_available = False
         else:
@@ -77,7 +89,7 @@ class SearchApp:
         if self.collection is None or not self.search_engine:
             return
         
-        print(f"Starting to index documents (limit: {limit})...")
+        self.logger.info(f"Starting to index documents (limit: {limit})...")
         cursor = self.collection.find().limit(limit)
         
         # Получаем общее количество для прогресс-бара
@@ -111,7 +123,7 @@ class SearchApp:
                 # Обновляем прогресс
                 if idx % 1000 == 0:
                     progress = idx / total
-                    print(f"Indexed {idx}/{total} documents ({progress*100:.1f}%)")
+                    self.logger.info(f"Indexed {idx}/{total} documents ({progress*100:.1f}%)")
                     if self.progress_callback:
                         self.progress_callback(progress, f"Индексировано {idx}/{total} документов")
         
@@ -119,9 +131,10 @@ class SearchApp:
         if bulk_operations:
             self.collection.bulk_write(bulk_operations, ordered=False)
         
-        print(f"Indexing complete! Total indexed: {self.search_engine.get_document_count()}")
+        indexed_count = self.search_engine.get_document_count()
+        self.logger.info(f"Indexing complete! Total indexed: {indexed_count}")
         if self.progress_callback:
-            self.progress_callback(1.0, f"Готово! Индексировано {self.search_engine.get_document_count()} документов")
+            self.progress_callback(1.0, f"Готово! Индексировано {indexed_count} документов")
     
     def search_tfidf(self, query: str, top_k: int = 10) -> List[DisplayResult]:
         """TF-IDF поиск."""
@@ -144,14 +157,28 @@ class SearchApp:
         
         return results
     
-    def search_boolean(self, query: str) -> List[DisplayResult]:
-        """Булев поиск."""
+    def search_boolean(self, query: str, top_k: int = 10) -> List[DisplayResult]:
+        """
+        Булев поиск.
+        
+        Args:
+            query: Поисковый запрос
+            top_k: Количество результатов для возврата
+        """
+        self.logger.info(f"Boolean search: query='{query}', top_k={top_k}")
         results = []
         
         if self.engine_available and self.search_engine:
             doc_ids = self.search_engine.boolean_query(query)
+            self.logger.info(f"Boolean search: C++ returned {len(doc_ids)} document IDs")
             
-            for doc_id in doc_ids[:50]:  # Ограничиваем вывод
+            if not doc_ids:
+                self.logger.warning(f"Boolean search: No results found for query '{query}'")
+                return []
+            
+            self.logger.debug(f"Boolean search: First 10 doc_ids: {doc_ids[:10]}")
+            
+            for doc_id in doc_ids[:top_k]:  # Используем top_k вместо жёстко закодированного 50
                 doc = self._get_doc_by_cpp_id(doc_id)
                 if doc:
                     results.append(DisplayResult(
@@ -162,6 +189,10 @@ class SearchApp:
                         author=doc.get("author", "Неизвестен"),
                         year=doc.get("year", ""),
                     ))
+                else:
+                    self.logger.warning(f"Boolean search: Document not found for cpp_id={doc_id}")
+            
+            self.logger.info(f"Boolean search: Returning {len(results)} results")
         
         return results
     
@@ -259,7 +290,7 @@ def main():
                 if "TF-IDF" in search_mode:
                     results = app.search_tfidf(query, top_k)
                 else:
-                    results = app.search_boolean(query)
+                    results = app.search_boolean(query, top_k)  # Передаём top_k!
             
             if results:
                 st.success(f"Найдено результатов: {len(results)}")
