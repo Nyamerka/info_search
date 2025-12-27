@@ -71,7 +71,7 @@ class SearchApp:
     
     def _load_index_from_mongo(self, limit: int = 10000):
         """Загружает документы из MongoDB в C++ индекс."""
-        if not self.collection or not self.search_engine:
+        if self.collection is None or not self.search_engine:
             return
         
         cursor = self.collection.find().limit(limit)
@@ -129,7 +129,7 @@ class SearchApp:
     
     def _get_doc_by_cpp_id(self, cpp_id: int) -> Optional[dict]:
         """Получает документ из MongoDB по C++ ID."""
-        if self.collection:
+        if self.collection is not None:
             return self.collection.find_one({"cpp_doc_id": cpp_id})
         return None
     
@@ -142,7 +142,7 @@ class SearchApp:
             "indexed_docs": 0,
         }
         
-        if self.mongo_available and self.collection:
+        if self.mongo_available and self.collection is not None:
             stats["mongo_docs"] = self.collection.count_documents({})
         
         if self.engine_available and self.search_engine:
@@ -239,4 +239,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
