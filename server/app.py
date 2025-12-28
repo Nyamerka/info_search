@@ -30,6 +30,7 @@ except Exception as e:
 
 
 
+
 try:
     from evaluation import SearchEvaluator
     EVALUATION_AVAILABLE = True
@@ -69,6 +70,10 @@ class SearchApp:
             self.mongo_client.admin.command('ping')
             self.db = self.mongo_client[self.db_name]
             self.collection = self.db["poems"]
+            
+            self.collection.create_index("cpp_doc_id", unique=False)
+            self.logger.info("Index on cpp_doc_id ensured")
+            
             self.mongo_available = True
             self.logger.info("MongoDB connected successfully")
         except Exception as e:
@@ -208,8 +213,7 @@ class SearchApp:
             clean_query = ' '.join(query_terms)
             
             
-            search_limit = min(len(doc_ids), 100)
-            tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=search_limit)
+            tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=doc_ids)
         
             
             boolean_set = set(doc_ids)
@@ -254,6 +258,7 @@ class SearchApp:
     
         return results
 
+
     
     def _extract_query_terms(self, query: str) -> List[str]:
         """Извлекает термины запроса, исключая операторы AND/OR/NOT и скобки."""
@@ -290,6 +295,7 @@ class SearchApp:
             stats["indexed_docs"] = self.search_engine.get_document_count()
         
         return stats
+
 
 
 def render_search_tab(app: SearchApp):
@@ -333,6 +339,7 @@ def render_search_tab(app: SearchApp):
             st.info("Введите запрос для поиска.")
 
 
+
 def render_metrics_tab(app: SearchApp):
     """Вкладка бенчмарков и метрик."""
     st.header("📊 Оценка качества поиска")
@@ -374,13 +381,26 @@ def render_metrics_tab(app: SearchApp):
         )
     
     with col2:
-        top_k = st.number_input(
-            "Top-K для оценки:",
-            min_value=5,
-            max_value=50,
-            value=50,
-            help="Количество результатов для оценки по каждому запросу"
+        
+        evaluate_all = st.checkbox(
+            "Оценить все результаты (без ограничения Top-K)",
+            value=False,
+            help="Построить графики по всем найденным документам, без лимита Top-K"
         )
+        
+        if evaluate_all:
+            st.info("📊 Режим: оценка всех результатов")
+            top_k = 50000  
+            display_top_k = "Все"
+        else:
+            top_k = st.number_input(
+                "Top-K для оценки:",
+                min_value=5,
+                max_value=200,
+                value=50,
+                help="Количество результатов для оценки по каждому запросу"
+            )
+            display_top_k = str(top_k)
         
         use_synthetic = st.checkbox(
             "Использовать синтетические запросы",
@@ -417,6 +437,8 @@ def render_metrics_tab(app: SearchApp):
                 
                 
                 st.session_state.benchmark_results = results
+                st.session_state.evaluate_all_mode = evaluate_all
+                st.session_state.display_top_k = display_top_k
                 
                 
                 import time
@@ -433,9 +455,12 @@ def render_metrics_tab(app: SearchApp):
     
     if "benchmark_results" in st.session_state:
         results = st.session_state.benchmark_results
+        evaluate_all_mode = st.session_state.get('evaluate_all_mode', False)
+        display_top_k = st.session_state.get('display_top_k', 'N/A')
         
         if results:
-            st.success(f"✅ Бенчмарк выполнен! Оценено запросов: {results.get('n_queries', 0)}")
+            mode_text = "по всем результатам" if evaluate_all_mode else f"с Top-K={display_top_k}"
+            st.success(f"✅ Бенчмарк выполнен {mode_text}! Оценено запросов: {results.get('n_queries', 0)}")
             
             
             st.subheader("📈 Усредненные метрики")
@@ -445,6 +470,9 @@ def render_metrics_tab(app: SearchApp):
             if avg_metrics:
                 
                 k_values = sorted(list(avg_metrics['P'].keys()))
+                
+                
+                st.info(f"📍 Метрики рассчитаны для следующих значений K: {', '.join(map(str, k_values))}")
                 
                 metrics_data = {
                     'Метрика': ['P', 'DCG', 'NDCG', 'ERR']
@@ -491,8 +519,9 @@ def render_metrics_tab(app: SearchApp):
                         marker=dict(size=8)
                     ))
                 
+                title_suffix = " (все результаты)" if evaluate_all_mode else f" (Top-{display_top_k})"
                 fig.update_layout(
-                    title='Метрики качества поиска (усредненные)',
+                    title=f'Метрики качества поиска (усредненные){title_suffix}',
                     xaxis_title='Top-K',
                     yaxis_title='Значение метрики',
                     hovermode='x unified',
@@ -523,7 +552,7 @@ def render_metrics_tab(app: SearchApp):
                 ))
                 
                 fig_dcg.update_layout(
-                    title='DCG (без нормализации)',
+                    title=f'DCG (без нормализации){title_suffix}',
                     xaxis_title='Top-K',
                     yaxis_title='DCG',
                     hovermode='x unified',
@@ -539,10 +568,21 @@ def render_metrics_tab(app: SearchApp):
                 
                 if per_query and len(per_query) > 0:
                     
+                    
+                    default_k = k_values[len(k_values) // 2] if len(k_values) > 0 else 10
+                    
+                    metric_options = []
+                    for metric_name in ['NDCG', 'P', 'ERR', 'DCG']:
+                        for k in k_values:
+                            metric_options.append(f"{metric_name}@{k}")
+                    
+                    default_metric = f"NDCG@{default_k}"
+                    default_index = metric_options.index(default_metric) if default_metric in metric_options else 0
+                    
                     metric_to_plot = st.selectbox(
                         "Выберите метрику для детального просмотра:",
-                        ["NDCG@10", "P@10", "ERR@10", "DCG@10"],
-                        index=0
+                        metric_options,
+                        index=default_index
                     )
                     
                     
@@ -596,7 +636,7 @@ def render_metrics_tab(app: SearchApp):
                     )
                     
                     fig_per_query.update_layout(
-                        title=f'{metric_to_plot} для каждого запроса',
+                        title=f'{metric_to_plot} для каждого запроса{title_suffix}',
                         xaxis_title='Номер запроса',
                         yaxis_title=metric_to_plot,
                         hovermode='closest',
@@ -636,18 +676,25 @@ def render_metrics_tab(app: SearchApp):
                             step=5
                         )
                         
+                        
+                        display_k = st.selectbox(
+                            "Отображать метрики для K:",
+                            k_values,
+                            index=min(2, len(k_values) - 1)  
+                        )
+                        
                         for i, query_result in enumerate(per_query[:num_to_show], 1):
                             st.markdown(f"**{i}. {query_result['query']}**")
                             
                             query_metrics = query_result.get('metrics', {})
                             
                             
-                            mini_data = {'Метрика': ['P@10', 'DCG@10', 'NDCG@10', 'ERR@10']}
+                            mini_data = {'Метрика': [f'P@{display_k}', f'DCG@{display_k}', f'NDCG@{display_k}', f'ERR@{display_k}']}
                             mini_data['Значение'] = [
-                                query_metrics.get('P', {}).get(10, 0.0),
-                                query_metrics.get('DCG', {}).get(10, 0.0),
-                                query_metrics.get('NDCG', {}).get(10, 0.0),
-                                query_metrics.get('ERR', {}).get(10, 0.0)
+                                query_metrics.get('P', {}).get(display_k, 0.0),
+                                query_metrics.get('DCG', {}).get(display_k, 0.0),
+                                query_metrics.get('NDCG', {}).get(display_k, 0.0),
+                                query_metrics.get('ERR', {}).get(display_k, 0.0)
                             ]
                             
                             st.dataframe(
@@ -657,6 +704,7 @@ def render_metrics_tab(app: SearchApp):
                         
                         if num_to_show < len(per_query):
                             st.info(f"Отображено {num_to_show} из {len(per_query)} запросов. Увеличьте слайдер для просмотра большего количества.")
+
 
 
 def main():
@@ -728,6 +776,7 @@ def main():
         1. Библиотека `libsearch_engine.so` скомпилирована
         2. Путь к библиотеке указан в переменной `LIB_PATH`
         """)
+
 
 
 if __name__ == "__main__":
