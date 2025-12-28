@@ -167,22 +167,21 @@ class SearchApp:
         """Булев поиск с TF-IDF ранжированием."""
         self.logger.info(f"Boolean search: query='{query}', top_k={top_k}")
         results = []
-        
+    
         if self.engine_available and self.search_engine:
             # 1. Получаем булевые результаты (фильтрация по AND/OR/NOT)
             doc_ids = self.search_engine.boolean_query(query)
             self.logger.info(f"Boolean search: C++ returned {len(doc_ids)} document IDs")
-            
+        
             if not doc_ids:
                 self.logger.warning(f"Boolean search: No results found for query '{query}'")
                 return []
-            
+        
             # 2. Извлекаем термины запроса (без операторов)
             query_terms = self._extract_query_terms(query)
-            
+        
             if not query_terms:
-                # Если нет терминов, возвращаем результаты без ранжирования
-                self.logger.warning("No query terms found, returning unranked results")
+                # Если нет терминов, возвращаем первые top_k результатов
                 for doc_id in doc_ids[:top_k]:
                     doc = self._get_doc_by_cpp_id(doc_id)
                     if doc:
@@ -195,38 +194,57 @@ class SearchApp:
                             year=doc.get("year", ""),
                         ))
                 return results
-            
-            # 3. Получаем TF-IDF scores для всех булевых результатов
-            clean_query = ' '.join(query_terms)
-            self.logger.info(f"Computing TF-IDF scores for query terms: {query_terms}")
-            
-            # Запрашиваем TF-IDF для достаточно большого количества результатов
-            tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=len(doc_ids))
-            
-            # 4. Создаём map doc_id -> score
-            score_map = {r.doc_id: r.score for r in tfidf_results}
-            self.logger.debug(f"TF-IDF scores computed for {len(score_map)} documents")
-            
-            # 5. Формируем результаты с правильными scores
-            for doc_id in doc_ids:
-                doc = self._get_doc_by_cpp_id(doc_id)
-                if doc:
-                    results.append(DisplayResult(
-                        doc_id=doc_id,
-                        score=score_map.get(doc_id, 0.0),  # Используем TF-IDF score или 0
-                        title=doc.get("title", "Без названия"),
-                        text=doc.get("text", "")[:500] + "...",
-                        author=doc.get("author", "Неизвестен"),
-                        year=doc.get("year", ""),
-                    ))
-            
-            # 6. Сортируем по score (убывание) и берём top_k
-            results.sort(key=lambda x: x.score, reverse=True)
-            results = results[:top_k]
-            
-            self.logger.info(f"Boolean search: Returning {len(results)} ranked results")
         
+            # 3. Получаем TF-IDF для всего индекса
+            clean_query = ' '.join(query_terms)
+            # Запрашиваем достаточно результатов, чтобы покрыть булевый набор
+            # Но не больше разумного лимита
+            search_limit = min(len(doc_ids), 100)
+            tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=search_limit)
+        
+            # 4. Создаём set из булевых результатов для быстрой проверки
+            boolean_set = set(doc_ids)
+        
+            # 5. Фильтруем TF-IDF результаты, оставляя только булевые
+            for tfidf_res in tfidf_results:
+                if tfidf_res.doc_id in boolean_set:
+                    doc = self._get_doc_by_cpp_id(tfidf_res.doc_id)
+                    if doc:
+                        results.append(DisplayResult(
+                            doc_id=tfidf_res.doc_id,
+                            score=tfidf_res.score,
+                            title=doc.get("title", "Без названия"),
+                            text=doc.get("text", "")[:500] + "...",
+                            author=doc.get("author", "Неизвестен"),
+                            year=doc.get("year", ""),
+                        ))
+                    
+                        # Как только получили top_k, можем остановиться
+                        if len(results) >= top_k:
+                            break
+        
+            # 6. Если не хватило результатов, добавляем оставшиеся без score
+            if len(results) < top_k:
+                scored_ids = {r.doc_id for r in results}
+                for doc_id in doc_ids:
+                    if doc_id not in scored_ids:
+                        doc = self._get_doc_by_cpp_id(doc_id)
+                        if doc:
+                            results.append(DisplayResult(
+                                doc_id=doc_id,
+                                score=0.0,
+                                title=doc.get("title", "Без названия"),
+                                text=doc.get("text", "")[:500] + "...",
+                                author=doc.get("author", "Неизвестен"),
+                                year=doc.get("year", ""),
+                            ))
+                            if len(results) >= top_k:
+                                break
+        
+            self.logger.info(f"Boolean search: Returning {len(results)} ranked results")
+    
         return results
+
     
     def _extract_query_terms(self, query: str) -> List[str]:
         """Извлекает термины запроса, исключая операторы AND/OR/NOT и скобки."""
