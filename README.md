@@ -4,27 +4,66 @@
 
 ## Архитектура
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Streamlit UI (Python)                    │
-│                        app.py                               │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ ctypes FFI
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  libsearch_engine.so (C++)                  │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐     │
-│  │ TSearchDB   │  │ TInvertedIdx │  │ TBooleanSearch  │     │
-│  └─────────────┘  └──────────────┘  └─────────────────┘     │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐     │
-│  │ TTfIdf      │  │ TPorterStem  │  │ TLzw (сжатие)   │     │
-│  └─────────────┘  └──────────────┘  └─────────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      MongoDB (документы)                    │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Frontend"
+        UI[Streamlit UI<br/>app.py]
+    end
+    
+    subgraph "Python Layer"
+        CLI[CLI<br/>cli.py]
+        EVAL[Evaluation<br/>evaluation.py]
+        METRICS[Metrics<br/>metrics.py]
+        BRIDGE[Search Bridge<br/>search_bridge.py<br/>ctypes FFI]
+        LOADER[Data Loader<br/>data_loader.py]
+    end
+    
+    subgraph "C++ Core"
+        LIB[libsearch_engine.so]
+        
+        subgraph "Search"
+            SEARCHDB[TSearchDatabase]
+            TFIDF[TTfIdf]
+            BOOL[TBooleanSearch]
+            INV[TInvertedIndex]
+        end
+        
+        subgraph "Text Processing"
+            TOK[TTokenizer]
+            STEM[TPorterStemmer]
+            LZW[TLzw Compression]
+        end
+        
+        subgraph "Data Structures"
+            VEC[TVector]
+            MAP[TMap / TUnorderedMap]
+            SET[TSet / TUnorderedSet]
+            STR[TString]
+        end
+    end
+    
+    subgraph "Storage"
+        MONGO[(MongoDB<br/>poems collection)]
+    end
+    
+    UI --> BRIDGE
+    CLI --> BRIDGE
+    UI --> EVAL
+    EVAL --> METRICS
+    BRIDGE --> LIB
+    LOADER --> MONGO
+    UI --> MONGO
+    LIB --> SEARCHDB
+    SEARCHDB --> TFIDF
+    SEARCHDB --> BOOL
+    SEARCHDB --> INV
+    TFIDF --> TOK
+    BOOL --> TOK
+    TOK --> STEM
+    SEARCHDB --> LZW
+    SEARCHDB --> VEC
+    SEARCHDB --> MAP
+    SEARCHDB --> STR
 ```
 
 ## Реализованные компоненты
@@ -57,26 +96,63 @@
 
 ## Сборка
 
+### Требования
+
+- CMake 3.14+
+- C++17 совместимый компилятор (GCC 8+, Clang 7+, MSVC 2017+)
+- Python 3.8+
+- MongoDB 4.4+
+
+### Сборка C++ библиотеки
+
 ```bash
-# Сборка C++
 mkdir build && cd build
 cmake ..
-cmake --build .
+cmake --build . -j$(nproc)
+```
 
-# Запуск тестов
+После сборки библиотека будет доступна по пути `build/search_system/libsearch_engine.so` (Linux) или `libsearch_engine.dylib` (macOS).
+
+### Запуск тестов C++
+
+```bash
+cd build
 ctest -j4 --output-on-failure
+```
+
+### Установка Python зависимостей
+
+```bash
+cd server
+pip install -r requirements.txt
+```
+
+### Запуск приложения локально
+
+1. Запустите MongoDB:
+```bash
+mongod --dbpath /path/to/data
+```
+
+2. Загрузите данные (один раз):
+```bash
+cd server
+python data_loader.py --input ../data/poetry50k.dedup.jsonl
+```
+
+3. Запустите Streamlit:
+```bash
+cd server
+LIB_PATH=../build/search_system/libsearch_engine.so streamlit run app.py
 ```
 
 ## Запуск с Docker
 
 ```bash
-# Положить датасет
 cp ~/Desktop/poetry50k.dedup.jsonl data/
 
-# Запустить MongoDB + Streamlit
 docker-compose up -d
 
-# Загрузить данные (один раз)
 docker-compose run --rm data_loader
 
 # Открыть http://localhost:8501
@@ -85,13 +161,10 @@ docker-compose run --rm data_loader
 ## CLI использование
 
 ```bash
-# TF-IDF поиск
 echo "eternal love" | python server/cli.py --mode tfidf --top-k 10
 
-# Булев поиск
 echo "love AND heart" | python server/cli.py --mode boolean
 
-# Интерактивный режим
 python server/cli.py --interactive
 ```
 
@@ -102,22 +175,58 @@ python server/cli.py --interactive
 - Запустить автоматический бенчмарк на синтетических запросах
 - Выбрать режим поиска (TF-IDF или Boolean)
 - Настроить количество тестовых запросов (5-100)
-- Настроить Top-K для оценки (5-50)
+- Настроить Top-K для оценки (5-200) или оценить все результаты
 
 ### Реализованные метрики
 
-- **Precision@k (P@k)** - доля релевантных документов в топ-k выдаче
-- **DCG@k** - Discounted Cumulative Gain (учитывает позицию документов)
-- **NDCG@k** - нормализованный DCG к идеальной выдаче (от 0 до 1)
-- **ERR@k** - Expected Reciprocal Rank (вероятностная метрика)
+#### Precision@k (P@k)
+Доля релевантных документов в топ-k выдаче.
+
+$$P@k = \frac{|\text{релевантные документы в топ-}k|}{k}$$
+
+- **Диапазон**: [0, 1]
+- **Интерпретация**: P@10 = 0.6 означает, что 6 из 10 документов в выдаче релевантны
+- **Когда использовать**: когда важно, чтобы каждый результат был релевантен
+
+#### DCG@k (Discounted Cumulative Gain)
+Учитывает не только релевантность, но и позицию документа — более высокие позиции важнее.
+
+$$DCG@k = \sum_{i=1}^{k} \frac{rel_i}{\log_2(i+1)}$$
+
+- **Диапазон**: [0, ∞)
+- **Интерпретация**: чем выше, тем лучше. Релевантные документы на первых позициях дают больший вклад
+- **Когда использовать**: когда порядок документов важен
+
+#### NDCG@k (Normalized DCG)
+DCG, нормализованный относительно идеальной выдачи (когда все релевантные документы на первых позициях).
+
+$$NDCG@k = \frac{DCG@k}{IDCG@k}$$
+
+где IDCG@k — DCG для идеального ранжирования.
+
+- **Диапазон**: [0, 1]
+- **Интерпретация**: NDCG@10 = 0.85 означает, что выдача на 85% соответствует идеальной
+- **Когда использовать**: для сравнения разных поисковых систем на одних данных
+
+#### ERR@k (Expected Reciprocal Rank)
+Вероятностная метрика, моделирующая поведение пользователя: он просматривает результаты сверху вниз и может остановиться на любом релевантном документе.
+
+$$ERR@k = \sum_{i=1}^{k} \frac{1}{i} \prod_{j=1}^{i-1}(1-R_j) \cdot R_i$$
+
+где $R_i = \frac{2^{rel_i}-1}{2^{max\_grade}}$ — вероятность удовлетворения пользователя документом на позиции i.
+
+- **Диапазон**: [0, 1]
+- **Интерпретация**: учитывает, что пользователь прекращает поиск после нахождения релевантного документа
+- **Когда использовать**: когда моделируется реальное поведение пользователя
 
 ### Визуализация результатов
 
-- **Таблица** с усредненными метриками по всем запросам для @1, @3, @5, @10
-- **Интерактивные графики Plotly** для анализа динамики метрик:
-  - Основной график: P, NDCG, ERR
-  - Отдельный график для DCG (может иметь другой масштаб)
-- **Детальные результаты** по каждому запросу с возможностью выбора количества отображаемых запросов (5-100)
+- **Таблица** с усредненными метриками по всем запросам для выбранных значений k
+- **Интерактивные графики Plotly**:
+  - Основной график: P, NDCG, ERR по всем значениям k
+  - Отдельный график для DCG (имеет другой масштаб)
+  - Распределение метрик по запросам с цветовой шкалой
+- **Детальные результаты** по каждому запросу с возможностью выбора количества отображаемых запросов
 
 ### Запуск бенчмарка
 

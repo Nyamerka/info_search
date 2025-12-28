@@ -6,9 +6,9 @@ import logging
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from typing import List, Optional
+from typing import List, Optional, Dict
 from dataclasses import dataclass
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient, UpdateOne, ASCENDING
 
 
 logging.basicConfig(
@@ -59,6 +59,7 @@ class SearchApp:
         self.lib_path = os.getenv("LIB_PATH", None)
         self.progress_callback = progress_callback
         self.logger = logging.getLogger(__name__)
+        self._doc_cache: Dict[int, dict] = {}
         
         self._init_mongo()
         self._init_search_engine()
@@ -71,8 +72,9 @@ class SearchApp:
             self.db = self.mongo_client[self.db_name]
             self.collection = self.db["poems"]
             
-            self.collection.create_index("cpp_doc_id", unique=False)
-            self.logger.info("Index on cpp_doc_id ensured")
+            self.collection.create_index([("cpp_doc_id", ASCENDING)], unique=False, background=True)
+            self.collection.create_index([("_id", ASCENDING), ("cpp_doc_id", ASCENDING)], background=True)
+            self.logger.info("MongoDB indexes ensured")
             
             self.mongo_available = True
             self.logger.info("MongoDB connected successfully")
@@ -89,7 +91,6 @@ class SearchApp:
                 self.engine_available = True
                 self.logger.info("C++ search engine initialized")
                 
-                
                 if self.mongo_available and self.search_engine.get_document_count() == 0:
                     self._load_index_from_mongo()
             except Exception as e:
@@ -105,16 +106,13 @@ class SearchApp:
         if self.collection is None or not self.search_engine:
             return
         
-        
         self.collection.update_many({}, {"$unset": {"cpp_doc_id": ""}})
         
         self.logger.info(f"Starting to index documents (limit: {limit})...")
         
         cursor = self.collection.find().sort("_id", 1).limit(limit)
         
-        
         total = min(limit, self.collection.count_documents({}))
-        
         
         batch_size = 500
         bulk_operations = []
@@ -124,9 +122,7 @@ class SearchApp:
             title = doc.get("title", "")
             
             if content:
-                
                 cpp_id = self.search_engine.add_document(content, title)
-                
                 
                 bulk_operations.append(
                     UpdateOne(
@@ -135,18 +131,15 @@ class SearchApp:
                     )
                 )
                 
-                
                 if len(bulk_operations) >= batch_size:
                     self.collection.bulk_write(bulk_operations, ordered=False)
                     bulk_operations = []
-                
                 
                 if idx % 1000 == 0:
                     progress = idx / total
                     self.logger.info(f"Indexed {idx}/{total} documents ({progress*100:.1f}%)")
                     if self.progress_callback:
                         self.progress_callback(progress, f"Индексировано {idx}/{total} документов")
-        
         
         if bulk_operations:
             self.collection.bulk_write(bulk_operations, ordered=False)
@@ -156,6 +149,30 @@ class SearchApp:
         if self.progress_callback:
             self.progress_callback(1.0, f"Готово! Индексировано {indexed_count} документов")
     
+    def _get_docs_batch(self, cpp_ids: List[int]) -> Dict[int, dict]:
+        """Получает документы из MongoDB пакетом по C++ ID."""
+        if self.collection is None or not cpp_ids:
+            return {}
+        
+        cached_ids = set(cpp_ids) & set(self._doc_cache.keys())
+        missing_ids = set(cpp_ids) - cached_ids
+        
+        result = {cpp_id: self._doc_cache[cpp_id] for cpp_id in cached_ids}
+        
+        if missing_ids:
+            docs = self.collection.find(
+                {"cpp_doc_id": {"$in": list(missing_ids)}},
+                {"cpp_doc_id": 1, "title": 1, "text": 1, "author": 1, "year": 1}
+            )
+            
+            for doc in docs:
+                cpp_id = doc.get("cpp_doc_id")
+                if cpp_id is not None:
+                    self._doc_cache[cpp_id] = doc
+                    result[cpp_id] = doc
+        
+        return result
+    
     def search_tfidf(self, query: str, top_k: int = 10) -> List[DisplayResult]:
         """TF-IDF поиск."""
         results = []
@@ -163,8 +180,11 @@ class SearchApp:
         if self.engine_available and self.search_engine:
             search_results = self.search_engine.search_tfidf(query, top_k)
             
+            cpp_ids = [sr.doc_id for sr in search_results]
+            docs_map = self._get_docs_batch(cpp_ids)
+            
             for sr in search_results:
-                doc = self._get_doc_by_cpp_id(sr.doc_id)
+                doc = docs_map.get(sr.doc_id)
                 if doc:
                     results.append(DisplayResult(
                         doc_id=sr.doc_id,
@@ -183,7 +203,6 @@ class SearchApp:
         results = []
     
         if self.engine_available and self.search_engine:
-            
             doc_ids = self.search_engine.boolean_query(query)
             self.logger.info(f"Boolean search: C++ returned {len(doc_ids)} document IDs")
         
@@ -191,13 +210,14 @@ class SearchApp:
                 self.logger.warning(f"Boolean search: No results found for query '{query}'")
                 return []
         
-            
             query_terms = self._extract_query_terms(query)
         
             if not query_terms:
+                cpp_ids = doc_ids[:top_k]
+                docs_map = self._get_docs_batch(cpp_ids)
                 
-                for doc_id in doc_ids[:top_k]:
-                    doc = self._get_doc_by_cpp_id(doc_id)
+                for doc_id in cpp_ids:
+                    doc = docs_map.get(doc_id)
                     if doc:
                         results.append(DisplayResult(
                             doc_id=doc_id,
@@ -209,39 +229,42 @@ class SearchApp:
                         ))
                 return results
         
-            
             clean_query = ' '.join(query_terms)
-            
             
             tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=doc_ids)
         
-            
             boolean_set = set(doc_ids)
-        
             
+            matched_results = []
             for tfidf_res in tfidf_results:
                 if tfidf_res.doc_id in boolean_set:
-                    doc = self._get_doc_by_cpp_id(tfidf_res.doc_id)
-                    if doc:
-                        results.append(DisplayResult(
-                            doc_id=tfidf_res.doc_id,
-                            score=tfidf_res.score,
-                            title=doc.get("title", "Без названия"),
-                            text=doc.get("text", "")[:500] + "...",
-                            author=doc.get("author", "Неизвестен"),
-                            year=doc.get("year", ""),
-                        ))
-                    
-                        
-                        if len(results) >= top_k:
-                            break
-        
+                    matched_results.append(tfidf_res)
+                    if len(matched_results) >= top_k:
+                        break
             
+            cpp_ids = [r.doc_id for r in matched_results]
+            docs_map = self._get_docs_batch(cpp_ids)
+        
+            for tfidf_res in matched_results:
+                doc = docs_map.get(tfidf_res.doc_id)
+                if doc:
+                    results.append(DisplayResult(
+                        doc_id=tfidf_res.doc_id,
+                        score=tfidf_res.score,
+                        title=doc.get("title", "Без названия"),
+                        text=doc.get("text", "")[:500] + "...",
+                        author=doc.get("author", "Неизвестен"),
+                        year=doc.get("year", ""),
+                    ))
+        
             if len(results) < top_k:
                 scored_ids = {r.doc_id for r in results}
-                for doc_id in doc_ids:
-                    if doc_id not in scored_ids:
-                        doc = self._get_doc_by_cpp_id(doc_id)
+                remaining_ids = [did for did in doc_ids if did not in scored_ids][:top_k - len(results)]
+                
+                if remaining_ids:
+                    remaining_docs = self._get_docs_batch(remaining_ids)
+                    for doc_id in remaining_ids:
+                        doc = remaining_docs.get(doc_id)
                         if doc:
                             results.append(DisplayResult(
                                 doc_id=doc_id,
@@ -258,15 +281,12 @@ class SearchApp:
     
         return results
 
-
     
     def _extract_query_terms(self, query: str) -> List[str]:
         """Извлекает термины запроса, исключая операторы AND/OR/NOT и скобки."""
         operators = {'and', 'or', 'not', '(', ')'}
         
-        
         tokens = query.lower().replace('(', ' ( ').replace(')', ' ) ').split()
-        
         
         terms = [t for t in tokens if t not in operators and t.strip()]
         
@@ -275,8 +295,14 @@ class SearchApp:
     
     def _get_doc_by_cpp_id(self, cpp_id: int) -> Optional[dict]:
         """Получает документ из MongoDB по C++ ID."""
+        if cpp_id in self._doc_cache:
+            return self._doc_cache[cpp_id]
+        
         if self.collection is not None:
-            return self.collection.find_one({"cpp_doc_id": cpp_id})
+            doc = self.collection.find_one({"cpp_doc_id": cpp_id})
+            if doc:
+                self._doc_cache[cpp_id] = doc
+            return doc
         return None
     
     def get_stats(self) -> dict:
@@ -304,18 +330,20 @@ def render_search_tab(app: SearchApp):
         "Режим поиска:",
         ["TF-IDF (релевантность)", "Булев (AND/OR/NOT)"],
         horizontal=True,
+        key="search_mode_radio"
     )
     
     query = st.text_input(
         "Введите поисковый запрос:",
         placeholder="love AND heart" if "Булев" in search_mode else "eternal love",
+        key="search_query_input"
     )
     
     col1, col2 = st.columns([1, 4])
     with col1:
-        top_k = st.number_input("Результатов:", min_value=1, max_value=100, value=10)
+        top_k = st.number_input("Результатов:", min_value=1, max_value=100, value=10, key="search_top_k")
     
-    if st.button("🔍 Искать", type="primary"):
+    if st.button("🔍 Искать", type="primary", key="search_button"):
         if query:
             with st.spinner("Поиск..."):
                 if "TF-IDF" in search_mode:
@@ -360,7 +388,6 @@ def render_metrics_tab(app: SearchApp):
     - **ERR@k** - вероятностная метрика ожидаемого обратного ранга
     """)
     
-    
     st.subheader("⚙️ Настройки бенчмарка")
     
     col1, col2 = st.columns(2)
@@ -369,7 +396,8 @@ def render_metrics_tab(app: SearchApp):
         search_mode = st.selectbox(
             "Режим поиска:",
             ["tfidf", "boolean"],
-            index=0
+            index=0,
+            key="metrics_search_mode"
         )
         
         n_synthetic = st.number_input(
@@ -377,20 +405,21 @@ def render_metrics_tab(app: SearchApp):
             min_value=5,
             max_value=100,
             value=50,
-            help="Автоматически генерируемые запросы для оценки"
+            help="Автоматически генерируемые запросы для оценки",
+            key="metrics_n_synthetic"
         )
     
     with col2:
-        
         evaluate_all = st.checkbox(
             "Оценить все результаты (без ограничения Top-K)",
             value=False,
-            help="Построить графики по всем найденным документам, без лимита Top-K"
+            help="Построить графики по всем найденным документам, без лимита Top-K",
+            key="metrics_evaluate_all"
         )
         
         if evaluate_all:
             st.info("📊 Режим: оценка всех результатов")
-            top_k = 50000  
+            top_k = 50000
             display_top_k = "Все"
         else:
             top_k = st.number_input(
@@ -398,60 +427,50 @@ def render_metrics_tab(app: SearchApp):
                 min_value=5,
                 max_value=200,
                 value=50,
-                help="Количество результатов для оценки по каждому запросу"
+                help="Количество результатов для оценки по каждому запросу",
+                key="metrics_top_k"
             )
             display_top_k = str(top_k)
         
         use_synthetic = st.checkbox(
             "Использовать синтетические запросы",
             value=True,
-            help="Генерировать случайные запросы из корпуса"
+            help="Генерировать случайные запросы из корпуса",
+            key="metrics_use_synthetic"
         )
     
+    progress_placeholder = st.empty()
+    status_placeholder = st.empty()
     
-    if st.button("🚀 Запустить бенчмарк", type="primary"):
+    if st.button("🚀 Запустить бенчмарк", type="primary", key="run_benchmark_button"):
+        progress_bar = progress_placeholder.progress(0)
         
-        progress_container = st.container()
+        def update_progress(progress: float, message: str):
+            progress_bar.progress(min(progress, 1.0))
+            status_placeholder.text(message)
         
-        with progress_container:
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+        try:
+            evaluator = SearchEvaluator(app, progress_callback=update_progress)
             
-            try:
-                
-                evaluator = SearchEvaluator(app)
-                
-                status_text.text("Генерация тестовых запросов...")
-                progress_bar.progress(0.1)
-                
-                
-                results = evaluator.evaluate_all(
-                    search_mode=search_mode,
-                    top_k=top_k,
-                    use_synthetic=use_synthetic,
-                    n_synthetic=n_synthetic
-                )
-                
-                progress_bar.progress(1.0)
-                status_text.success("✅ Готово!")
-                
-                
-                st.session_state.benchmark_results = results
-                st.session_state.evaluate_all_mode = evaluate_all
-                st.session_state.display_top_k = display_top_k
-                
-                
-                import time
-                time.sleep(0.5)
-                
-            except Exception as e:
-                status_text.error(f"Ошибка при выполнении бенчмарка: {e}")
-                st.exception(e)
-            finally:
-                
-                progress_bar.empty()
-                status_text.empty()
-    
+            update_progress(0.05, "Инициализация бенчмарка...")
+            
+            results = evaluator.evaluate_all(
+                search_mode=search_mode,
+                top_k=top_k,
+                use_synthetic=use_synthetic,
+                n_synthetic=n_synthetic
+            )
+            
+            progress_bar.progress(1.0)
+            status_placeholder.success("✅ Бенчмарк завершён!")
+            
+            st.session_state.benchmark_results = results
+            st.session_state.evaluate_all_mode = evaluate_all
+            st.session_state.display_top_k = display_top_k
+            
+        except Exception as e:
+            status_placeholder.error(f"Ошибка при выполнении бенчмарка: {e}")
+            st.exception(e)
     
     if "benchmark_results" in st.session_state:
         results = st.session_state.benchmark_results
@@ -462,16 +481,12 @@ def render_metrics_tab(app: SearchApp):
             mode_text = "по всем результатам" if evaluate_all_mode else f"с Top-K={display_top_k}"
             st.success(f"✅ Бенчмарк выполнен {mode_text}! Оценено запросов: {results.get('n_queries', 0)}")
             
-            
             st.subheader("📈 Усредненные метрики")
             
             avg_metrics = results.get('avg_metrics', {})
+            k_values = results.get('k_values', sorted(list(avg_metrics['P'].keys())) if avg_metrics else [])
             
-            if avg_metrics:
-                
-                k_values = sorted(list(avg_metrics['P'].keys()))
-                
-                
+            if avg_metrics and k_values:
                 st.info(f"📍 Метрики рассчитаны для следующих значений K: {', '.join(map(str, k_values))}")
                 
                 metrics_data = {
@@ -480,23 +495,20 @@ def render_metrics_tab(app: SearchApp):
                 
                 for k in k_values:
                     metrics_data[f'@{k}'] = [
-                        avg_metrics['P'][k],
-                        avg_metrics['DCG'][k],
-                        avg_metrics['NDCG'][k],
-                        avg_metrics['ERR'][k]
+                        avg_metrics['P'].get(k, 0.0),
+                        avg_metrics['DCG'].get(k, 0.0),
+                        avg_metrics['NDCG'].get(k, 0.0),
+                        avg_metrics['ERR'].get(k, 0.0)
                     ]
                 
                 df_metrics = pd.DataFrame(metrics_data)
-                
                 
                 st.dataframe(
                     df_metrics.style.format({col: "{:.4f}" for col in df_metrics.columns if col != 'Метрика'}),
                     use_container_width=True
                 )
                 
-                
                 st.subheader("📊 Визуализация усредненных метрик")
-                
                 
                 fig = go.Figure()
                 
@@ -508,7 +520,7 @@ def render_metrics_tab(app: SearchApp):
                 }
                 
                 for metric_name in ['P', 'NDCG', 'ERR']:
-                    values = [avg_metrics[metric_name][k] for k in k_values]
+                    values = [avg_metrics[metric_name].get(k, 0.0) for k in k_values]
                     
                     fig.add_trace(go.Scatter(
                         x=[f'@{k}' for k in k_values],
@@ -537,10 +549,9 @@ def render_metrics_tab(app: SearchApp):
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                
                 fig_dcg = go.Figure()
                 
-                dcg_values = [avg_metrics['DCG'][k] for k in k_values]
+                dcg_values = [avg_metrics['DCG'].get(k, 0.0) for k in k_values]
                 
                 fig_dcg.add_trace(go.Scatter(
                     x=[f'@{k}' for k in k_values],
@@ -561,15 +572,12 @@ def render_metrics_tab(app: SearchApp):
                 
                 st.plotly_chart(fig_dcg, use_container_width=True)
                 
-                
                 st.subheader("📉 Распределение метрик по запросам")
                 
                 per_query = results.get('per_query_metrics', [])
                 
                 if per_query and len(per_query) > 0:
-                    
-                    
-                    default_k = k_values[len(k_values) // 2] if len(k_values) > 0 else 10
+                    default_k = k_values[len(k_values) // 2] if len(k_values) > 0 else k_values[0] if k_values else 10
                     
                     metric_options = []
                     for metric_name in ['NDCG', 'P', 'ERR', 'DCG']:
@@ -582,13 +590,12 @@ def render_metrics_tab(app: SearchApp):
                     metric_to_plot = st.selectbox(
                         "Выберите метрику для детального просмотра:",
                         metric_options,
-                        index=default_index
+                        index=default_index,
+                        key="metric_to_plot_select"
                     )
-                    
                     
                     metric_name, k_str = metric_to_plot.split('@')
                     k_value = int(k_str)
-                    
                     
                     query_numbers = []
                     metric_values = []
@@ -600,8 +607,7 @@ def render_metrics_tab(app: SearchApp):
                         
                         query_numbers.append(i)
                         metric_values.append(value)
-                        query_texts.append(query_result['query'][:50] + "...")  
-                    
+                        query_texts.append(query_result['query'][:50] + "...")
                     
                     fig_per_query = go.Figure()
                     
@@ -625,7 +631,6 @@ def render_metrics_tab(app: SearchApp):
                                       '<extra></extra>'
                     ))
                     
-                    
                     avg_value = sum(metric_values) / len(metric_values) if metric_values else 0
                     fig_per_query.add_hline(
                         y=avg_value,
@@ -635,17 +640,34 @@ def render_metrics_tab(app: SearchApp):
                         annotation_position="right"
                     )
                     
+                    n_queries = len(query_numbers)
+                    if n_queries <= 20:
+                        tick_step = 1
+                    elif n_queries <= 50:
+                        tick_step = 5
+                    else:
+                        tick_step = max(1, n_queries // 10)
+                    
+                    tickvals = list(range(1, n_queries + 1, tick_step))
+                    if n_queries not in tickvals:
+                        tickvals.append(n_queries)
+                    
                     fig_per_query.update_layout(
                         title=f'{metric_to_plot} для каждого запроса{title_suffix}',
                         xaxis_title='Номер запроса',
                         yaxis_title=metric_to_plot,
                         hovermode='closest',
                         height=500,
-                        showlegend=True
+                        showlegend=True,
+                        xaxis=dict(
+                            tickmode='array',
+                            tickvals=tickvals,
+                            ticktext=[str(v) for v in tickvals],
+                            range=[0, n_queries + 1]
+                        )
                     )
                     
                     st.plotly_chart(fig_per_query, use_container_width=True)
-                    
                     
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
@@ -659,35 +681,32 @@ def render_metrics_tab(app: SearchApp):
                         std_dev = statistics.stdev(metric_values) if len(metric_values) > 1 else 0
                         st.metric("Ст. откл.", f"{std_dev:.4f}")
                 
-                
                 with st.expander("🔍 Детальные результаты по запросам"):
                     per_query = results.get('per_query_metrics', [])
                     
                     if per_query:
-                        
                         st.info(f"Всего оценено запросов: {len(per_query)}")
-                        
                         
                         num_to_show = st.slider(
                             "Показать запросов:",
                             min_value=5,
                             max_value=min(len(per_query), 100),
                             value=min(20, len(per_query)),
-                            step=5
+                            step=5,
+                            key="num_queries_slider"
                         )
-                        
                         
                         display_k = st.selectbox(
                             "Отображать метрики для K:",
                             k_values,
-                            index=min(2, len(k_values) - 1)  
+                            index=min(2, len(k_values) - 1),
+                            key="display_k_select"
                         )
                         
                         for i, query_result in enumerate(per_query[:num_to_show], 1):
                             st.markdown(f"**{i}. {query_result['query']}**")
                             
                             query_metrics = query_result.get('metrics', {})
-                            
                             
                             mini_data = {'Метрика': [f'P@{display_k}', f'DCG@{display_k}', f'NDCG@{display_k}', f'ERR@{display_k}']}
                             mini_data['Значение'] = [
@@ -717,9 +736,7 @@ def main():
     st.title("📜 Poetry Search Engine")
     st.markdown("*Поисковая система по корпусу поэзии (C++ backend + Streamlit UI)*")
     
-    
     if "app" not in st.session_state:
-        
         init_container = st.empty()
         
         with init_container.container():
@@ -733,11 +750,9 @@ def main():
             status_text.text("Подключение к базе данных...")
             st.session_state.app = SearchApp(progress_callback=update_progress)
         
-        
         init_container.empty()
     
     app = st.session_state.app
-    
     
     with st.sidebar:
         st.header("📊 Статистика")
@@ -758,7 +773,6 @@ def main():
         - Метрики качества (P, DCG, NDCG, ERR)
         """)
     
-    
     tab1, tab2 = st.tabs(["🔍 Поиск", "📊 Метрики"])
     
     with tab1:
@@ -766,7 +780,6 @@ def main():
     
     with tab2:
         render_metrics_tab(app)
-    
     
     if not app.engine_available:
         st.warning("""
