@@ -146,9 +146,3 @@ python server/cli.py --interactive
 **Poetry 50K**: https://ciir.cs.umass.edu/downloads/poetry/
 
 570,930 уникальных стихотворений на английском языке.
-
-## Лицензия
-
-[1](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/images/148376543/6947e767-c9ac-4a7e-a621-5fc83071b2aa/Snimok-ekrana-2025-12-28-v-17.53.48.jpg)
-[2](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/images/148376543/7f59fee5-ca10-4eab-b1dc-d970a65575f8/Snimok-ekrana-2025-12-28-v-17.54.35.jpg)
-[3](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/148376543/036c5e56-2c34-46bb-a589-31f22cd953be/paste-3.txt)
