@@ -8,6 +8,7 @@ from typing import List, Optional
 from dataclasses import dataclass
 from pymongo import MongoClient, UpdateOne
 
+
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
@@ -17,6 +18,7 @@ logging.basicConfig(
         logging.FileHandler('search_app.log')
     ]
 )
+
 
 # Попытка импорта C++ моста (может не работать без библиотеки)
 try:
@@ -89,8 +91,12 @@ class SearchApp:
         if self.collection is None or not self.search_engine:
             return
         
+        # Очищаем старые cpp_doc_id перед переиндексацией
+        self.collection.update_many({}, {"$unset": {"cpp_doc_id": ""}})
+        
         self.logger.info(f"Starting to index documents (limit: {limit})...")
-        cursor = self.collection.find().limit(limit)
+        # Сортируем по _id для детерминированного порядка
+        cursor = self.collection.find().sort("_id", 1).limit(limit)
         
         # Получаем общее количество для прогресс-бара
         total = min(limit, self.collection.count_documents({}))
@@ -158,17 +164,12 @@ class SearchApp:
         return results
     
     def search_boolean(self, query: str, top_k: int = 10) -> List[DisplayResult]:
-        """
-        Булев поиск.
-        
-        Args:
-            query: Поисковый запрос
-            top_k: Количество результатов для возврата
-        """
+        """Булев поиск с TF-IDF ранжированием."""
         self.logger.info(f"Boolean search: query='{query}', top_k={top_k}")
         results = []
         
         if self.engine_available and self.search_engine:
+            # 1. Получаем булевые результаты (фильтрация по AND/OR/NOT)
             doc_ids = self.search_engine.boolean_query(query)
             self.logger.info(f"Boolean search: C++ returned {len(doc_ids)} document IDs")
             
@@ -176,25 +177,69 @@ class SearchApp:
                 self.logger.warning(f"Boolean search: No results found for query '{query}'")
                 return []
             
-            self.logger.debug(f"Boolean search: First 10 doc_ids: {doc_ids[:10]}")
+            # 2. Извлекаем термины запроса (без операторов)
+            query_terms = self._extract_query_terms(query)
             
-            for doc_id in doc_ids[:top_k]:  # Используем top_k вместо жёстко закодированного 50
+            if not query_terms:
+                # Если нет терминов, возвращаем результаты без ранжирования
+                self.logger.warning("No query terms found, returning unranked results")
+                for doc_id in doc_ids[:top_k]:
+                    doc = self._get_doc_by_cpp_id(doc_id)
+                    if doc:
+                        results.append(DisplayResult(
+                            doc_id=doc_id,
+                            score=0.0,
+                            title=doc.get("title", "Без названия"),
+                            text=doc.get("text", "")[:500] + "...",
+                            author=doc.get("author", "Неизвестен"),
+                            year=doc.get("year", ""),
+                        ))
+                return results
+            
+            # 3. Получаем TF-IDF scores для всех булевых результатов
+            clean_query = ' '.join(query_terms)
+            self.logger.info(f"Computing TF-IDF scores for query terms: {query_terms}")
+            
+            # Запрашиваем TF-IDF для достаточно большого количества результатов
+            tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=len(doc_ids))
+            
+            # 4. Создаём map doc_id -> score
+            score_map = {r.doc_id: r.score for r in tfidf_results}
+            self.logger.debug(f"TF-IDF scores computed for {len(score_map)} documents")
+            
+            # 5. Формируем результаты с правильными scores
+            for doc_id in doc_ids:
                 doc = self._get_doc_by_cpp_id(doc_id)
                 if doc:
                     results.append(DisplayResult(
                         doc_id=doc_id,
-                        score=0,
+                        score=score_map.get(doc_id, 0.0),  # Используем TF-IDF score или 0
                         title=doc.get("title", "Без названия"),
                         text=doc.get("text", "")[:500] + "...",
                         author=doc.get("author", "Неизвестен"),
                         year=doc.get("year", ""),
                     ))
-                else:
-                    self.logger.warning(f"Boolean search: Document not found for cpp_id={doc_id}")
             
-            self.logger.info(f"Boolean search: Returning {len(results)} results")
+            # 6. Сортируем по score (убывание) и берём top_k
+            results.sort(key=lambda x: x.score, reverse=True)
+            results = results[:top_k]
+            
+            self.logger.info(f"Boolean search: Returning {len(results)} ranked results")
         
         return results
+    
+    def _extract_query_terms(self, query: str) -> List[str]:
+        """Извлекает термины запроса, исключая операторы AND/OR/NOT и скобки."""
+        operators = {'and', 'or', 'not', '(', ')'}
+        
+        # Разбиваем запрос на токены
+        tokens = query.lower().replace('(', ' ( ').replace(')', ' ) ').split()
+        
+        # Фильтруем операторы
+        terms = [t for t in tokens if t not in operators and t.strip()]
+        
+        self.logger.debug(f"Extracted query terms: {terms} from query: '{query}'")
+        return terms
     
     def _get_doc_by_cpp_id(self, cpp_id: int) -> Optional[dict]:
         """Получает документ из MongoDB по C++ ID."""
@@ -290,7 +335,7 @@ def main():
                 if "TF-IDF" in search_mode:
                     results = app.search_tfidf(query, top_k)
                 else:
-                    results = app.search_boolean(query, top_k)  # Передаём top_k!
+                    results = app.search_boolean(query, top_k)
             
             if results:
                 st.success(f"Найдено результатов: {len(results)}")
