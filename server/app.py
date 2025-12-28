@@ -1,7 +1,6 @@
 """
 Streamlit UI для поисковой системы по поэзии.
 """
-
 import os
 import logging
 import streamlit as st
@@ -350,10 +349,10 @@ def render_metrics_tab(app: SearchApp):
     
     st.markdown("""
     Этот раздел позволяет оценить качество поиска с помощью метрик:
-    - **Precision@k** - доля релевантных документов в топ-k
-    - **DCG@k** - учитывает позицию документов
-    - **NDCG@k** - нормализованный DCG
-    - **ERR@k** - вероятностная метрика ожидаемого ранга
+    - **Precision@k (P@k)** - доля релевантных документов в топ-k
+    - **DCG@k** - учитывает позицию документов (чем выше в списке, тем важнее)
+    - **NDCG@k** - нормализованный DCG к идеальной выдаче (значение от 0 до 1)
+    - **ERR@k** - вероятностная метрика ожидаемого обратного ранга
     """)
     
     # Настройки бенчмарка
@@ -372,7 +371,7 @@ def render_metrics_tab(app: SearchApp):
             "Количество синтетических запросов:",
             min_value=5,
             max_value=100,
-            value=20,
+            value=50,
             help="Автоматически генерируемые запросы для оценки"
         )
     
@@ -381,7 +380,8 @@ def render_metrics_tab(app: SearchApp):
             "Top-K для оценки:",
             min_value=5,
             max_value=50,
-            value=10
+            value=50,
+            help="Количество результатов для оценки по каждому запросу"
         )
         
         use_synthetic = st.checkbox(
@@ -393,9 +393,15 @@ def render_metrics_tab(app: SearchApp):
     # Кнопка запуска
     if st.button("🚀 Запустить бенчмарк", type="primary"):
         with st.spinner("Выполняется оценка качества поиска..."):
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
             try:
                 # Создаём evaluator
                 evaluator = SearchEvaluator(app)
+                
+                status_text.text("Генерация тестовых запросов...")
+                progress_bar.progress(0.1)
                 
                 # Запускаем оценку
                 results = evaluator.evaluate_all(
@@ -405,10 +411,19 @@ def render_metrics_tab(app: SearchApp):
                     n_synthetic=n_synthetic
                 )
                 
+                progress_bar.progress(1.0)
+                status_text.text("Готово!")
+                
                 # Сохраняем результаты в session_state
                 st.session_state.benchmark_results = results
                 
+                # Очищаем UI
+                progress_bar.empty()
+                status_text.empty()
+                
             except Exception as e:
+                progress_bar.empty()
+                status_text.empty()
                 st.error(f"Ошибка при выполнении бенчмарка: {e}")
                 st.exception(e)
     
@@ -517,16 +532,29 @@ def render_metrics_tab(app: SearchApp):
                     per_query = results.get('per_query_metrics', [])
                     
                     if per_query:
-                        for i, query_result in enumerate(per_query[:10], 1):
+                        # Показываем все запросы, но с пагинацией
+                        st.info(f"Всего оценено запросов: {len(per_query)}")
+                        
+                        # Выбор количества запросов для отображения
+                        num_to_show = st.slider(
+                            "Показать запросов:",
+                            min_value=5,
+                            max_value=min(len(per_query), 100),
+                            value=min(20, len(per_query)),
+                            step=5
+                        )
+                        
+                        for i, query_result in enumerate(per_query[:num_to_show], 1):
                             st.markdown(f"**{i}. {query_result['query']}**")
                             
                             query_metrics = query_result.get('metrics', {})
                             
                             # Мини-таблица для каждого запроса
-                            mini_data = {'Метрика': ['NDCG@10', 'P@10', 'ERR@10']}
+                            mini_data = {'Метрика': ['P@10', 'DCG@10', 'NDCG@10', 'ERR@10']}
                             mini_data['Значение'] = [
-                                query_metrics.get('NDCG', {}).get(10, 0.0),
                                 query_metrics.get('P', {}).get(10, 0.0),
+                                query_metrics.get('DCG', {}).get(10, 0.0),
+                                query_metrics.get('NDCG', {}).get(10, 0.0),
                                 query_metrics.get('ERR', {}).get(10, 0.0)
                             ]
                             
@@ -534,10 +562,9 @@ def render_metrics_tab(app: SearchApp):
                                 pd.DataFrame(mini_data).style.format({'Значение': "{:.4f}"}),
                                 hide_index=True
                             )
-                            
-                            if i >= 10:
-                                st.info(f"Показаны первые 10 из {len(per_query)} запросов")
-                                break
+                        
+                        if num_to_show < len(per_query):
+                            st.info(f"Отображено {num_to_show} из {len(per_query)} запросов. Увеличьте слайдер для просмотра большего количества.")
 
 
 def main():
@@ -586,7 +613,7 @@ def main():
         - Булев поиск (AND, OR, NOT)
         - LZW-сжатие документов
         - Porter Stemmer
-        - Метрики качества (P, NDCG, ERR)
+        - Метрики качества (P, DCG, NDCG, ERR)
         """)
     
     # Вкладки
