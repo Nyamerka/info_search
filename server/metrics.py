@@ -57,7 +57,7 @@ def dcg_at_k(relevance: List[int], k: int) -> float:
     dcg = 0.0
     
     for i in range(k):
-        # i+2 потому что log2(1) = 0, поэтому начинаем с log2(2)
+        
         dcg += relevance[i] / math.log2(i + 2)
     
     return dcg
@@ -81,7 +81,7 @@ def ndcg_at_k(relevance: List[int], k: int) -> float:
     
     dcg = dcg_at_k(relevance, k)
     
-    # Идеальная выдача - сортировка по убыванию релевантности
+    
     ideal_relevance = sorted(relevance, reverse=True)
     idcg = dcg_at_k(ideal_relevance, k)
     
@@ -113,17 +113,17 @@ def err_at_k(relevance: List[int], k: int, max_grade: int = 4) -> float:
     
     k = min(k, len(relevance))
     err = 0.0
-    p = 1.0  # Вероятность того, что пользователь продолжает просмотр
+    p = 1.0  
     
     for i in range(k):
-        # Нормализуем релевантность к [0, 1]
-        # R_i = (2^rel - 1) / (2^max_grade)
+        
+        
         r_i = (2 ** relevance[i] - 1) / (2 ** max_grade)
         
-        # Вклад i-й позиции
+        
         err += p * r_i / (i + 1)
         
-        # Обновляем вероятность продолжения просмотра
+        
         p *= (1 - r_i)
     
     return err
@@ -180,7 +180,7 @@ def average_metrics(
     if not all_queries_relevance:
         return {}
     
-    # Инициализация суммарных метрик
+    
     sum_metrics = {
         'P': {k: 0.0 for k in k_values},
         'DCG': {k: 0.0 for k in k_values},
@@ -188,7 +188,7 @@ def average_metrics(
         'ERR': {k: 0.0 for k in k_values}
     }
     
-    # Суммируем метрики для каждого запроса
+    
     for relevance in all_queries_relevance:
         query_metrics = calculate_all_metrics(relevance, k_values, max_grade)
         
@@ -196,7 +196,7 @@ def average_metrics(
             for k in k_values:
                 sum_metrics[metric_name][k] += query_metrics[metric_name][k]
     
-    # Усредняем
+    
     num_queries = len(all_queries_relevance)
     avg_metrics = {
         metric_name: {
@@ -222,14 +222,14 @@ def format_metrics_table(metrics: Dict[str, Dict[int, float]]) -> str:
     if not metrics:
         return "No metrics available"
     
-    # Получаем все k значения
+    
     k_values = sorted(list(metrics[list(metrics.keys())[0]].keys()))
     
-    # Формируем заголовок
+    
     header = "Metric\t" + "\t".join(f"@{k}" for k in k_values)
     lines = [header, "-" * len(header)]
     
-    # Добавляем строки для каждой метрики
+    
     for metric_name in ['P', 'DCG', 'NDCG', 'ERR']:
         if metric_name in metrics:
             values = [f"{metrics[metric_name][k]:.4f}" for k in k_values]

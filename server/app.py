@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from pymongo import MongoClient, UpdateOne
 
 
-# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -22,7 +21,6 @@ logging.basicConfig(
 )
 
 
-# Попытка импорта C++ моста (может не работать без библиотеки)
 try:
     from search_bridge import SearchEngine, SearchResult
     SEARCH_ENGINE_AVAILABLE = True
@@ -31,7 +29,7 @@ except Exception as e:
     print(f"Warning: C++ search engine not available: {e}")
 
 
-# Импорт модулей оценки
+
 try:
     from evaluation import SearchEvaluator
     EVALUATION_AVAILABLE = True
@@ -86,7 +84,7 @@ class SearchApp:
                 self.engine_available = True
                 self.logger.info("C++ search engine initialized")
                 
-                # Если MongoDB доступна, загружаем документы в индекс
+                
                 if self.mongo_available and self.search_engine.get_document_count() == 0:
                     self._load_index_from_mongo()
             except Exception as e:
@@ -102,17 +100,17 @@ class SearchApp:
         if self.collection is None or not self.search_engine:
             return
         
-        # Очищаем старые cpp_doc_id перед переиндексацией
+        
         self.collection.update_many({}, {"$unset": {"cpp_doc_id": ""}})
         
         self.logger.info(f"Starting to index documents (limit: {limit})...")
-        # Сортируем по _id для детерминированного порядка
+        
         cursor = self.collection.find().sort("_id", 1).limit(limit)
         
-        # Получаем общее количество для прогресс-бара
+        
         total = min(limit, self.collection.count_documents({}))
         
-        # Batch операции для MongoDB
+        
         batch_size = 500
         bulk_operations = []
         
@@ -121,10 +119,10 @@ class SearchApp:
             title = doc.get("title", "")
             
             if content:
-                # Добавляем в C++ индекс
+                
                 cpp_id = self.search_engine.add_document(content, title)
                 
-                # Накапливаем bulk операции
+                
                 bulk_operations.append(
                     UpdateOne(
                         {"_id": doc["_id"]},
@@ -132,19 +130,19 @@ class SearchApp:
                     )
                 )
                 
-                # Выполняем batch обновление
+                
                 if len(bulk_operations) >= batch_size:
                     self.collection.bulk_write(bulk_operations, ordered=False)
                     bulk_operations = []
                 
-                # Обновляем прогресс
+                
                 if idx % 1000 == 0:
                     progress = idx / total
                     self.logger.info(f"Indexed {idx}/{total} documents ({progress*100:.1f}%)")
                     if self.progress_callback:
                         self.progress_callback(progress, f"Индексировано {idx}/{total} документов")
         
-        # Дозаписываем оставшиеся операции
+        
         if bulk_operations:
             self.collection.bulk_write(bulk_operations, ordered=False)
         
@@ -180,7 +178,7 @@ class SearchApp:
         results = []
     
         if self.engine_available and self.search_engine:
-            # 1. Получаем булевые результаты (фильтрация по AND/OR/NOT)
+            
             doc_ids = self.search_engine.boolean_query(query)
             self.logger.info(f"Boolean search: C++ returned {len(doc_ids)} document IDs")
         
@@ -188,11 +186,11 @@ class SearchApp:
                 self.logger.warning(f"Boolean search: No results found for query '{query}'")
                 return []
         
-            # 2. Извлекаем термины запроса (без операторов)
+            
             query_terms = self._extract_query_terms(query)
         
             if not query_terms:
-                # Если нет терминов, возвращаем первые top_k результатов
+                
                 for doc_id in doc_ids[:top_k]:
                     doc = self._get_doc_by_cpp_id(doc_id)
                     if doc:
@@ -206,17 +204,17 @@ class SearchApp:
                         ))
                 return results
         
-            # 3. Получаем TF-IDF для всего индекса
+            
             clean_query = ' '.join(query_terms)
-            # Запрашиваем достаточно результатов, чтобы покрыть булевый набор
-            # Но не больше разумного лимита
+            
+            
             search_limit = min(len(doc_ids), 100)
             tfidf_results = self.search_engine.search_tfidf(clean_query, top_k=search_limit)
         
-            # 4. Создаём set из булевых результатов для быстрой проверки
+            
             boolean_set = set(doc_ids)
         
-            # 5. Фильтруем TF-IDF результаты, оставляя только булевые
+            
             for tfidf_res in tfidf_results:
                 if tfidf_res.doc_id in boolean_set:
                     doc = self._get_doc_by_cpp_id(tfidf_res.doc_id)
@@ -230,11 +228,11 @@ class SearchApp:
                             year=doc.get("year", ""),
                         ))
                     
-                        # Как только получили top_k, можем остановиться
+                        
                         if len(results) >= top_k:
                             break
         
-            # 6. Если не хватило результатов, добавляем оставшиеся без score
+            
             if len(results) < top_k:
                 scored_ids = {r.doc_id for r in results}
                 for doc_id in doc_ids:
@@ -261,10 +259,10 @@ class SearchApp:
         """Извлекает термины запроса, исключая операторы AND/OR/NOT и скобки."""
         operators = {'and', 'or', 'not', '(', ')'}
         
-        # Разбиваем запрос на токены
+        
         tokens = query.lower().replace('(', ' ( ').replace(')', ' ) ').split()
         
-        # Фильтруем операторы
+        
         terms = [t for t in tokens if t not in operators and t.strip()]
         
         self.logger.debug(f"Extracted query terms: {terms} from query: '{query}'")
@@ -355,7 +353,7 @@ def render_metrics_tab(app: SearchApp):
     - **ERR@k** - вероятностная метрика ожидаемого обратного ранга
     """)
     
-    # Настройки бенчмарка
+    
     st.subheader("⚙️ Настройки бенчмарка")
     
     col1, col2 = st.columns(2)
@@ -390,20 +388,23 @@ def render_metrics_tab(app: SearchApp):
             help="Генерировать случайные запросы из корпуса"
         )
     
-    # Кнопка запуска
+    
     if st.button("🚀 Запустить бенчмарк", type="primary"):
-        with st.spinner("Выполняется оценка качества поиска..."):
+        
+        progress_container = st.container()
+        
+        with progress_container:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
             try:
-                # Создаём evaluator
+                
                 evaluator = SearchEvaluator(app)
                 
                 status_text.text("Генерация тестовых запросов...")
                 progress_bar.progress(0.1)
                 
-                # Запускаем оценку
+                
                 results = evaluator.evaluate_all(
                     search_mode=search_mode,
                     top_k=top_k,
@@ -412,35 +413,37 @@ def render_metrics_tab(app: SearchApp):
                 )
                 
                 progress_bar.progress(1.0)
-                status_text.text("Готово!")
+                status_text.success("✅ Готово!")
                 
-                # Сохраняем результаты в session_state
+                
                 st.session_state.benchmark_results = results
                 
-                # Очищаем UI
-                progress_bar.empty()
-                status_text.empty()
+                
+                import time
+                time.sleep(0.5)
                 
             except Exception as e:
+                status_text.error(f"Ошибка при выполнении бенчмарка: {e}")
+                st.exception(e)
+            finally:
+                
                 progress_bar.empty()
                 status_text.empty()
-                st.error(f"Ошибка при выполнении бенчмарка: {e}")
-                st.exception(e)
     
-    # Отображение результатов
+    
     if "benchmark_results" in st.session_state:
         results = st.session_state.benchmark_results
         
         if results:
             st.success(f"✅ Бенчмарк выполнен! Оценено запросов: {results.get('n_queries', 0)}")
             
-            # Усредненные метрики
+            
             st.subheader("📈 Усредненные метрики")
             
             avg_metrics = results.get('avg_metrics', {})
             
             if avg_metrics:
-                # Создаём DataFrame для таблицы
+                
                 k_values = sorted(list(avg_metrics['P'].keys()))
                 
                 metrics_data = {
@@ -457,16 +460,16 @@ def render_metrics_tab(app: SearchApp):
                 
                 df_metrics = pd.DataFrame(metrics_data)
                 
-                # Отображаем таблицу
+                
                 st.dataframe(
                     df_metrics.style.format({col: "{:.4f}" for col in df_metrics.columns if col != 'Метрика'}),
                     use_container_width=True
                 )
                 
-                # Графики метрик
-                st.subheader("📊 Визуализация метрик")
                 
-                # Создаём интерактивный график с Plotly
+                st.subheader("📊 Визуализация усредненных метрик")
+                
+                
                 fig = go.Figure()
                 
                 colors = {
@@ -489,7 +492,7 @@ def render_metrics_tab(app: SearchApp):
                     ))
                 
                 fig.update_layout(
-                    title='Метрики качества поиска',
+                    title='Метрики качества поиска (усредненные)',
                     xaxis_title='Top-K',
                     yaxis_title='Значение метрики',
                     hovermode='x unified',
@@ -499,12 +502,13 @@ def render_metrics_tab(app: SearchApp):
                         y=1.02,
                         xanchor="right",
                         x=1
-                    )
+                    ),
+                    height=500
                 )
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Отдельный график для DCG (может иметь другой масштаб)
+                
                 fig_dcg = go.Figure()
                 
                 dcg_values = [avg_metrics['DCG'][k] for k in k_values]
@@ -522,20 +526,108 @@ def render_metrics_tab(app: SearchApp):
                     title='DCG (без нормализации)',
                     xaxis_title='Top-K',
                     yaxis_title='DCG',
-                    hovermode='x unified'
+                    hovermode='x unified',
+                    height=400
                 )
                 
                 st.plotly_chart(fig_dcg, use_container_width=True)
                 
-                # Детальные результаты по запросам (опционально)
+                
+                st.subheader("📉 Распределение метрик по запросам")
+                
+                per_query = results.get('per_query_metrics', [])
+                
+                if per_query and len(per_query) > 0:
+                    
+                    metric_to_plot = st.selectbox(
+                        "Выберите метрику для детального просмотра:",
+                        ["NDCG@10", "P@10", "ERR@10", "DCG@10"],
+                        index=0
+                    )
+                    
+                    
+                    metric_name, k_str = metric_to_plot.split('@')
+                    k_value = int(k_str)
+                    
+                    
+                    query_numbers = []
+                    metric_values = []
+                    query_texts = []
+                    
+                    for i, query_result in enumerate(per_query, 1):
+                        query_metrics = query_result.get('metrics', {})
+                        value = query_metrics.get(metric_name, {}).get(k_value, 0.0)
+                        
+                        query_numbers.append(i)
+                        metric_values.append(value)
+                        query_texts.append(query_result['query'][:50] + "...")  
+                    
+                    
+                    fig_per_query = go.Figure()
+                    
+                    fig_per_query.add_trace(go.Scatter(
+                        x=query_numbers,
+                        y=metric_values,
+                        mode='markers+lines',
+                        name=metric_to_plot,
+                        marker=dict(
+                            size=6,
+                            color=metric_values,
+                            colorscale='Viridis',
+                            showscale=True,
+                            colorbar=dict(title=metric_to_plot)
+                        ),
+                        line=dict(width=1, color='rgba(100,100,100,0.3)'),
+                        text=query_texts,
+                        hovertemplate='<b>Запрос %{x}</b><br>' +
+                                      '%{text}<br>' +
+                                      f'{metric_to_plot}: %{{y:.4f}}<br>' +
+                                      '<extra></extra>'
+                    ))
+                    
+                    
+                    avg_value = sum(metric_values) / len(metric_values) if metric_values else 0
+                    fig_per_query.add_hline(
+                        y=avg_value,
+                        line_dash="dash",
+                        line_color="red",
+                        annotation_text=f"Среднее: {avg_value:.4f}",
+                        annotation_position="right"
+                    )
+                    
+                    fig_per_query.update_layout(
+                        title=f'{metric_to_plot} для каждого запроса',
+                        xaxis_title='Номер запроса',
+                        yaxis_title=metric_to_plot,
+                        hovermode='closest',
+                        height=500,
+                        showlegend=True
+                    )
+                    
+                    st.plotly_chart(fig_per_query, use_container_width=True)
+                    
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Среднее", f"{avg_value:.4f}")
+                    with col2:
+                        st.metric("Минимум", f"{min(metric_values):.4f}")
+                    with col3:
+                        st.metric("Максимум", f"{max(metric_values):.4f}")
+                    with col4:
+                        import statistics
+                        std_dev = statistics.stdev(metric_values) if len(metric_values) > 1 else 0
+                        st.metric("Ст. откл.", f"{std_dev:.4f}")
+                
+                
                 with st.expander("🔍 Детальные результаты по запросам"):
                     per_query = results.get('per_query_metrics', [])
                     
                     if per_query:
-                        # Показываем все запросы, но с пагинацией
+                        
                         st.info(f"Всего оценено запросов: {len(per_query)}")
                         
-                        # Выбор количества запросов для отображения
+                        
                         num_to_show = st.slider(
                             "Показать запросов:",
                             min_value=5,
@@ -549,7 +641,7 @@ def render_metrics_tab(app: SearchApp):
                             
                             query_metrics = query_result.get('metrics', {})
                             
-                            # Мини-таблица для каждого запроса
+                            
                             mini_data = {'Метрика': ['P@10', 'DCG@10', 'NDCG@10', 'ERR@10']}
                             mini_data['Значение'] = [
                                 query_metrics.get('P', {}).get(10, 0.0),
@@ -577,26 +669,28 @@ def main():
     st.title("📜 Poetry Search Engine")
     st.markdown("*Поисковая система по корпусу поэзии (C++ backend + Streamlit UI)*")
     
-    # Инициализация приложения
+    
     if "app" not in st.session_state:
-        # Создаём progress bar
-        progress_bar = st.progress(0)
-        status_text = st.empty()
         
-        def update_progress(progress: float, text: str):
-            progress_bar.progress(progress)
-            status_text.text(text)
+        init_container = st.empty()
         
-        status_text.text("Подключение к базе данных...")
-        st.session_state.app = SearchApp(progress_callback=update_progress)
+        with init_container.container():
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            def update_progress(progress: float, text: str):
+                progress_bar.progress(progress)
+                status_text.text(text)
+            
+            status_text.text("Подключение к базе данных...")
+            st.session_state.app = SearchApp(progress_callback=update_progress)
         
-        # Очищаем UI после инициализации
-        progress_bar.empty()
-        status_text.empty()
+        
+        init_container.empty()
     
     app = st.session_state.app
     
-    # Боковая панель со статистикой
+    
     with st.sidebar:
         st.header("📊 Статистика")
         stats = app.get_stats()
@@ -616,7 +710,7 @@ def main():
         - Метрики качества (P, DCG, NDCG, ERR)
         """)
     
-    # Вкладки
+    
     tab1, tab2 = st.tabs(["🔍 Поиск", "📊 Метрики"])
     
     with tab1:
@@ -625,7 +719,7 @@ def main():
     with tab2:
         render_metrics_tab(app)
     
-    # Демо режим если движок недоступен
+    
     if not app.engine_available:
         st.warning("""
         ⚠️ **C++ поисковая система недоступна.**

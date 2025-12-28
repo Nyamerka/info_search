@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class TestQuery:
     """Тестовый запрос с известной релевантностью результатов."""
     query: str
-    doc_relevance: Dict[int, int]  # {doc_id: relevance_grade}
+    doc_relevance: Dict[int, int]  
     description: str = ""
 
 
@@ -56,7 +56,7 @@ class SearchEvaluator:
                 data = json.load(f)
             
             for item in data:
-                # Конвертируем строковые ключи в int
+                
                 doc_relevance = {
                     int(doc_id): grade
                     for doc_id, grade in item['relevance'].items()
@@ -89,7 +89,7 @@ class SearchEvaluator:
         """
         synthetic_queries = []
         
-        # Популярные слова для запросов
+        
         common_words = [
             'love', 'heart', 'soul', 'death', 'life', 'dream', 'night', 'day',
             'time', 'world', 'beauty', 'nature', 'god', 'man', 'woman', 'child',
@@ -98,19 +98,19 @@ class SearchEvaluator:
         ]
         
         for i in range(n_queries):
-            # Генерируем запрос из 1-3 слов
+            
             query_length = random.randint(1, 3)
             query_words = random.sample(common_words, query_length)
             query = ' '.join(query_words)
             
-            # Выполняем поиск
+            
             results = self.search_app.search_tfidf(query, top_k=top_k)
             
             if not results:
                 continue
             
-            # Назначаем релевантность на основе скоров
-            # Верхние 20% - релевантность 2, следующие 30% - 1, остальные - 0
+            
+            
             doc_relevance = {}
             
             scores = [r.score for r in results]
@@ -149,19 +149,19 @@ class SearchEvaluator:
         Returns:
             (relevance_list, metrics_dict)
         """
-        # Выполняем поиск
+        
         if search_mode == 'tfidf':
             results = self.search_app.search_tfidf(test_query.query, top_k=top_k)
         else:
             results = self.search_app.search_boolean(test_query.query, top_k=top_k)
         
-        # Формируем список релевантностей в порядке результатов
+        
         relevance_list = []
         for result in results:
             relevance = test_query.doc_relevance.get(result.doc_id, 0)
             relevance_list.append(relevance)
         
-        # Вычисляем метрики
+        
         metrics = calculate_all_metrics(relevance_list, k_values=[1, 3, 5, 10], max_grade=2)
         
         return relevance_list, metrics
@@ -183,7 +183,7 @@ class SearchEvaluator:
                 'queries': List[str]
             }
         """
-        # Объединяем реальные и синтетические запросы
+        
         queries_to_test = self.test_queries.copy()
         
         if use_synthetic and n_synthetic > 0:
@@ -194,7 +194,7 @@ class SearchEvaluator:
             self.logger.warning("No test queries available")
             return {}
         
-        # Оцениваем каждый запрос
+        
         all_relevance_lists = []
         per_query_results = []
         
@@ -220,7 +220,7 @@ class SearchEvaluator:
                 self.logger.error(f"Error evaluating query '{test_query.query}': {e}")
                 continue
         
-        # Усредняем метрики
+        
         avg_metrics = average_metrics(all_relevance_lists, k_values=[1, 3, 5, 10], max_grade=2)
         
         return {

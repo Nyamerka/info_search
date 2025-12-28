@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 CLI утилита командной строки для поисковой системы.
 Получает запросы со стандартного ввода, выдаёт результат в стандартный вывод.
@@ -110,13 +109,13 @@ def main():
     
     args = parser.parse_args()
     
-    # Инициализация
+    
     try:
         loader = DataLoader(mongo_uri=args.mongo_uri)
         loader.init_search_engine(lib_path=args.lib_path)
         engine = loader.search_engine
         
-        # Загружаем индекс из MongoDB если он пуст
+        
         if engine.get_document_count() == 0:
             print("Загрузка индекса из MongoDB...", file=sys.stderr)
             loader.index_from_mongo(limit=50000)
