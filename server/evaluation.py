@@ -1,1 +1,231 @@
-"""\nОценка качества поиска на тестовых запросах.\n\nФункционал:\n- Загрузка тестовых запросов с оценками релевантности\n- Автоматическая генерация синтетических тестовых запросов\n- Вычисление метрик для поисковой системы\n- Визуализация результатов\n"""\nimport json\nimport random\nimport logging\nfrom typing import List, Dict, Tuple, Optional\nfrom dataclasses import dataclass\nfrom pymongo import MongoClient\nfrom metrics import calculate_all_metrics, average_metrics\n\n\nlogger = logging.getLogger(__name__)\n\n\n@dataclass\nclass TestQuery:\n    \"\"\"Тестовый запрос с известной релевантностью результатов.\"\"\"\n    query: str\n    doc_relevance: Dict[int, int]  # {doc_id: relevance_grade}\n    description: str = \"\"\n\n\nclass SearchEvaluator:\n    \"\"\"Класс для оценки качества поисковой системы.\"\"\"\n    \n    def __init__(self, search_app, test_queries: Optional[List[TestQuery]] = None):\n        self.search_app = search_app\n        self.test_queries = test_queries or []\n        self.logger = logging.getLogger(__name__)\n    \n    def load_test_queries_from_file(self, filepath: str):\n        \"\"\"\n        Загружает тестовые запросы из JSON файла.\n        \n        Формат файла:\n        [\n            {\n                \"query\": \"love and heart\",\n                \"description\": \"poems about love\",\n                \"relevance\": {\n                    \"doc_id_1\": 2,  # 0-4 scale\n                    \"doc_id_2\": 1\n                }\n            }\n        ]\n        \"\"\"\n        try:\n            with open(filepath, 'r', encoding='utf-8') as f:\n                data = json.load(f)\n            \n            for item in data:\n                # Конвертируем строковые ключи в int\n                doc_relevance = {\n                    int(doc_id): grade\n                    for doc_id, grade in item['relevance'].items()\n                }\n                \n                test_query = TestQuery(\n                    query=item['query'],\n                    doc_relevance=doc_relevance,\n                    description=item.get('description', '')\n                )\n                self.test_queries.append(test_query)\n            \n            self.logger.info(f\"Loaded {len(data)} test queries from {filepath}\")\n        \n        except FileNotFoundError:\n            self.logger.warning(f\"Test queries file not found: {filepath}\")\n        except json.JSONDecodeError as e:\n            self.logger.error(f\"Invalid JSON in {filepath}: {e}\")\n        except Exception as e:\n            self.logger.error(f\"Error loading test queries: {e}\")\n    \n    def generate_synthetic_queries(self, n_queries: int = 10, top_k: int = 10) -> List[TestQuery]:\n        \"\"\"\n        Генерирует синтетические тестовые запросы.\n        \n        Стратегия:\n        1. Выбираем случайные слова из корпуса\n        2. Делаем запрос\n        3. Назначаем релевантность на основе TF-IDF скоров\n        \"\"\"\n        synthetic_queries = []\n        \n        # Популярные слова для запросов\n        common_words = [\n            'love', 'heart', 'soul', 'death', 'life', 'dream', 'night', 'day',\n            'time', 'world', 'beauty', 'nature', 'god', 'man', 'woman', 'child',\n            'hope', 'fear', 'joy', 'pain', 'tears', 'light', 'dark', 'wind',\n            'sea', 'sky', 'earth', 'sun', 'moon', 'star', 'flower', 'tree'\n        ]\n        \n        for i in range(n_queries):\n            # Генерируем запрос из 1-3 слов\n            query_length = random.randint(1, 3)\n            query_words = random.sample(common_words, query_length)\n            query = ' '.join(query_words)\n            \n            # Выполняем поиск\n            results = self.search_app.search_tfidf(query, top_k=top_k)\n            \n            if not results:\n                continue\n            \n            # Назначаем релевантность на основе скоров\n            # Верхние 20% - релевантность 2, следующие 30% - 1, остальные - 0\n            doc_relevance = {}\n            \n            scores = [r.score for r in results]\n            if max(scores) > 0:\n                for r in results:\n                    normalized_score = r.score / max(scores)\n                    \n                    if normalized_score >= 0.8:\n                        relevance = 2\n                    elif normalized_score >= 0.5:\n                        relevance = 1\n                    else:\n                        relevance = 0\n                    \n                    doc_relevance[r.doc_id] = relevance\n            \n            test_query = TestQuery(\n                query=query,\n                doc_relevance=doc_relevance,\n                description=f\"Synthetic query #{i+1}\"\n            )\n            synthetic_queries.append(test_query)\n        \n        self.logger.info(f\"Generated {len(synthetic_queries)} synthetic queries\")\n        return synthetic_queries\n    \n    def evaluate_query(\n        self,\n        test_query: TestQuery,\n        search_mode: str = 'tfidf',\n        top_k: int = 10\n    ) -> Tuple[List[int], Dict]:\n        \"\"\"\n        Оценивает качество поиска для одного запроса.\n        \n        Returns:\n            (relevance_list, metrics_dict)\n        \"\"\"\n        # Выполняем поиск\n        if search_mode == 'tfidf':\n            results = self.search_app.search_tfidf(test_query.query, top_k=top_k)\n        else:\n            results = self.search_app.search_boolean(test_query.query, top_k=top_k)\n        \n        # Формируем список релевантностей в порядке результатов\n        relevance_list = []\n        for result in results:\n            relevance = test_query.doc_relevance.get(result.doc_id, 0)\n            relevance_list.append(relevance)\n        \n        # Вычисляем метрики\n        metrics = calculate_all_metrics(relevance_list, k_values=[1, 3, 5, 10], max_grade=2)\n        \n        return relevance_list, metrics\n    \n    def evaluate_all(\n        self,\n        search_mode: str = 'tfidf',\n        top_k: int = 10,\n        use_synthetic: bool = True,\n        n_synthetic: int = 20\n    ) -> Dict:\n        \"\"\"\n        Оценивает качество поиска на всех тестовых запросах.\n        \n        Returns:\n            {\n                'avg_metrics': Dict[str, Dict[int, float]],\n                'per_query_metrics': List[Dict],\n                'queries': List[str]\n            }\n        \"\"\"\n        # Объединяем реальные и синтетические запросы\n        queries_to_test = self.test_queries.copy()\n        \n        if use_synthetic and n_synthetic > 0:\n            synthetic = self.generate_synthetic_queries(n_queries=n_synthetic, top_k=top_k)\n            queries_to_test.extend(synthetic)\n        \n        if not queries_to_test:\n            self.logger.warning(\"No test queries available\")\n            return {}\n        \n        # Оцениваем каждый запрос\n        all_relevance_lists = []\n        per_query_results = []\n        \n        for i, test_query in enumerate(queries_to_test):\n            self.logger.info(f\"Evaluating query {i+1}/{len(queries_to_test)}: {test_query.query}\")\n            \n            try:\n                relevance_list, metrics = self.evaluate_query(\n                    test_query,\n                    search_mode=search_mode,\n                    top_k=top_k\n                )\n                \n                all_relevance_lists.append(relevance_list)\n                per_query_results.append({\n                    'query': test_query.query,\n                    'description': test_query.description,\n                    'metrics': metrics,\n                    'relevance': relevance_list\n                })\n            \n            except Exception as e:\n                self.logger.error(f\"Error evaluating query '{test_query.query}': {e}\")\n                continue\n        \n        # Усредняем метрики\n        avg_metrics = average_metrics(all_relevance_lists, k_values=[1, 3, 5, 10], max_grade=2)\n        \n        return {\n            'avg_metrics': avg_metrics,\n            'per_query_metrics': per_query_results,\n            'n_queries': len(queries_to_test),\n            'search_mode': search_mode\n        }\n
+"""
+Оценка качества поиска на тестовых запросах.
+
+Функционал:
+- Загрузка тестовых запросов с оценками релевантности
+- Автоматическая генерация синтетических тестовых запросов
+- Вычисление метрик для поисковой системы
+- Визуализация результатов
+"""
+import json
+import random
+import logging
+from typing import List, Dict, Tuple, Optional
+from dataclasses import dataclass
+from pymongo import MongoClient
+from metrics import calculate_all_metrics, average_metrics
+
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TestQuery:
+    """Тестовый запрос с известной релевантностью результатов."""
+    query: str
+    doc_relevance: Dict[int, int]  # {doc_id: relevance_grade}
+    description: str = ""
+
+
+class SearchEvaluator:
+    """Класс для оценки качества поисковой системы."""
+    
+    def __init__(self, search_app, test_queries: Optional[List[TestQuery]] = None):
+        self.search_app = search_app
+        self.test_queries = test_queries or []
+        self.logger = logging.getLogger(__name__)
+    
+    def load_test_queries_from_file(self, filepath: str):
+        """
+        Загружает тестовые запросы из JSON файла.
+        
+        Формат файла:
+        [
+            {
+                "query": "love and heart",
+                "description": "poems about love",
+                "relevance": {
+                    "doc_id_1": 2,  # 0-4 scale
+                    "doc_id_2": 1
+                }
+            }
+        ]
+        """
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            for item in data:
+                # Конвертируем строковые ключи в int
+                doc_relevance = {
+                    int(doc_id): grade
+                    for doc_id, grade in item['relevance'].items()
+                }
+                
+                test_query = TestQuery(
+                    query=item['query'],
+                    doc_relevance=doc_relevance,
+                    description=item.get('description', '')
+                )
+                self.test_queries.append(test_query)
+            
+            self.logger.info(f"Loaded {len(data)} test queries from {filepath}")
+        
+        except FileNotFoundError:
+            self.logger.warning(f"Test queries file not found: {filepath}")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Invalid JSON in {filepath}: {e}")
+        except Exception as e:
+            self.logger.error(f"Error loading test queries: {e}")
+    
+    def generate_synthetic_queries(self, n_queries: int = 10, top_k: int = 10) -> List[TestQuery]:
+        """
+        Генерирует синтетические тестовые запросы.
+        
+        Стратегия:
+        1. Выбираем случайные слова из корпуса
+        2. Делаем запрос
+        3. Назначаем релевантность на основе TF-IDF скоров
+        """
+        synthetic_queries = []
+        
+        # Популярные слова для запросов
+        common_words = [
+            'love', 'heart', 'soul', 'death', 'life', 'dream', 'night', 'day',
+            'time', 'world', 'beauty', 'nature', 'god', 'man', 'woman', 'child',
+            'hope', 'fear', 'joy', 'pain', 'tears', 'light', 'dark', 'wind',
+            'sea', 'sky', 'earth', 'sun', 'moon', 'star', 'flower', 'tree'
+        ]
+        
+        for i in range(n_queries):
+            # Генерируем запрос из 1-3 слов
+            query_length = random.randint(1, 3)
+            query_words = random.sample(common_words, query_length)
+            query = ' '.join(query_words)
+            
+            # Выполняем поиск
+            results = self.search_app.search_tfidf(query, top_k=top_k)
+            
+            if not results:
+                continue
+            
+            # Назначаем релевантность на основе скоров
+            # Верхние 20% - релевантность 2, следующие 30% - 1, остальные - 0
+            doc_relevance = {}
+            
+            scores = [r.score for r in results]
+            if max(scores) > 0:
+                for r in results:
+                    normalized_score = r.score / max(scores)
+                    
+                    if normalized_score >= 0.8:
+                        relevance = 2
+                    elif normalized_score >= 0.5:
+                        relevance = 1
+                    else:
+                        relevance = 0
+                    
+                    doc_relevance[r.doc_id] = relevance
+            
+            test_query = TestQuery(
+                query=query,
+                doc_relevance=doc_relevance,
+                description=f"Synthetic query #{i+1}"
+            )
+            synthetic_queries.append(test_query)
+        
+        self.logger.info(f"Generated {len(synthetic_queries)} synthetic queries")
+        return synthetic_queries
+    
+    def evaluate_query(
+        self,
+        test_query: TestQuery,
+        search_mode: str = 'tfidf',
+        top_k: int = 10
+    ) -> Tuple[List[int], Dict]:
+        """
+        Оценивает качество поиска для одного запроса.
+        
+        Returns:
+            (relevance_list, metrics_dict)
+        """
+        # Выполняем поиск
+        if search_mode == 'tfidf':
+            results = self.search_app.search_tfidf(test_query.query, top_k=top_k)
+        else:
+            results = self.search_app.search_boolean(test_query.query, top_k=top_k)
+        
+        # Формируем список релевантностей в порядке результатов
+        relevance_list = []
+        for result in results:
+            relevance = test_query.doc_relevance.get(result.doc_id, 0)
+            relevance_list.append(relevance)
+        
+        # Вычисляем метрики
+        metrics = calculate_all_metrics(relevance_list, k_values=[1, 3, 5, 10], max_grade=2)
+        
+        return relevance_list, metrics
+    
+    def evaluate_all(
+        self,
+        search_mode: str = 'tfidf',
+        top_k: int = 10,
+        use_synthetic: bool = True,
+        n_synthetic: int = 20
+    ) -> Dict:
+        """
+        Оценивает качество поиска на всех тестовых запросах.
+        
+        Returns:
+            {
+                'avg_metrics': Dict[str, Dict[int, float]],
+                'per_query_metrics': List[Dict],
+                'queries': List[str]
+            }
+        """
+        # Объединяем реальные и синтетические запросы
+        queries_to_test = self.test_queries.copy()
+        
+        if use_synthetic and n_synthetic > 0:
+            synthetic = self.generate_synthetic_queries(n_queries=n_synthetic, top_k=top_k)
+            queries_to_test.extend(synthetic)
+        
+        if not queries_to_test:
+            self.logger.warning("No test queries available")
+            return {}
+        
+        # Оцениваем каждый запрос
+        all_relevance_lists = []
+        per_query_results = []
+        
+        for i, test_query in enumerate(queries_to_test):
+            self.logger.info(f"Evaluating query {i+1}/{len(queries_to_test)}: {test_query.query}")
+            
+            try:
+                relevance_list, metrics = self.evaluate_query(
+                    test_query,
+                    search_mode=search_mode,
+                    top_k=top_k
+                )
+                
+                all_relevance_lists.append(relevance_list)
+                per_query_results.append({
+                    'query': test_query.query,
+                    'description': test_query.description,
+                    'metrics': metrics,
+                    'relevance': relevance_list
+                })
+            
+            except Exception as e:
+                self.logger.error(f"Error evaluating query '{test_query.query}': {e}")
+                continue
+        
+        # Усредняем метрики
+        avg_metrics = average_metrics(all_relevance_lists, k_values=[1, 3, 5, 10], max_grade=2)
+        
+        return {
+            'avg_metrics': avg_metrics,
+            'per_query_metrics': per_query_results,
+            'n_queries': len(queries_to_test),
+            'search_mode': search_mode
+        }

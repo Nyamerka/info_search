@@ -1,1 +1,238 @@
-"""\nМетрики качества информационного поиска.\n\nРеализованы метрики:\n- Precision@k (P@k)\n- Discounted Cumulative Gain (DCG)\n- Normalized DCG (NDCG)\n- Expected Reciprocal Rank (ERR)\n\nИспользуются для оценки качества ранжирования результатов поиска.\n"""\nimport math\nfrom typing import List, Dict, Tuple\nimport logging\n\n\nlogger = logging.getLogger(__name__)\n\n\ndef precision_at_k(relevance: List[int], k: int) -> float:\n    \"\"\"\n    Precision@k - доля релевантных документов в топ-k выдаче.\n    \n    Args:\n        relevance: Список оценок релевантности (0 - нерелевантен, >= 1 - релевантен)\n        k: Количество рассматриваемых документов\n    \n    Returns:\n        P@k в диапазоне [0, 1]\n    \"\"\"\n    if k <= 0 or not relevance:\n        return 0.0\n    \n    k = min(k, len(relevance))\n    relevant_count = sum(1 for rel in relevance[:k] if rel > 0)\n    \n    return relevant_count / k\n\n\ndef dcg_at_k(relevance: List[int], k: int) -> float:\n    \"\"\"\n    Discounted Cumulative Gain@k - учитывает позицию документов.\n    \n    DCG@k = sum(rel_i / log2(i + 1)) for i in [0, k-1]\n    \n    Args:\n        relevance: Список оценок релевантности (неотрицательные числа)\n        k: Количество рассматриваемых документов\n    \n    Returns:\n        DCG@k значение\n    \"\"\"\n    if k <= 0 or not relevance:\n        return 0.0\n    \n    k = min(k, len(relevance))\n    dcg = 0.0\n    \n    for i in range(k):\n        # i+2 потому что log2(1) = 0, поэтому начинаем с log2(2)\n        dcg += relevance[i] / math.log2(i + 2)\n    \n    return dcg\n\n\ndef ndcg_at_k(relevance: List[int], k: int) -> float:\n    \"\"\"\n    Normalized Discounted Cumulative Gain@k - DCG нормализованный к идеальной выдаче.\n    \n    NDCG@k = DCG@k / IDCG@k\n    \n    Args:\n        relevance: Список оценок релевантности\n        k: Количество рассматриваемых документов\n    \n    Returns:\n        NDCG@k в диапазоне [0, 1]\n    \"\"\"\n    if k <= 0 or not relevance:\n        return 0.0\n    \n    dcg = dcg_at_k(relevance, k)\n    \n    # Идеальная выдача - сортировка по убыванию релевантности\n    ideal_relevance = sorted(relevance, reverse=True)\n    idcg = dcg_at_k(ideal_relevance, k)\n    \n    if idcg == 0.0:\n        return 0.0\n    \n    return dcg / idcg\n\n\ndef err_at_k(relevance: List[int], k: int, max_grade: int = 4) -> float:\n    \"\"\"\n    Expected Reciprocal Rank@k - вероятностная метрика.\n    \n    Моделирует вероятность того, что пользователь найдет релевантный документ\n    на каждой позиции, учитывая, что он мог удовлетвориться предыдущими.\n    \n    ERR@k = sum(1/(i+1) * P(user stops at position i))\n    \n    Args:\n        relevance: Список оценок релевантности (0 до max_grade)\n        k: Количество рассматриваемых документов\n        max_grade: Максимальная оценка релевантности (для нормализации)\n    \n    Returns:\n        ERR@k значение\n    \"\"\"\n    if k <= 0 or not relevance or max_grade == 0:\n        return 0.0\n    \n    k = min(k, len(relevance))\n    err = 0.0\n    p = 1.0  # Вероятность того, что пользователь продолжает просмотр\n    \n    for i in range(k):\n        # Нормализуем релевантность к [0, 1]\n        # R_i = (2^rel - 1) / (2^max_grade)\n        r_i = (2 ** relevance[i] - 1) / (2 ** max_grade)\n        \n        # Вклад i-й позиции\n        err += p * r_i / (i + 1)\n        \n        # Обновляем вероятность продолжения просмотра\n        p *= (1 - r_i)\n    \n    return err\n\n\ndef calculate_all_metrics(\n    relevance: List[int],\n    k_values: List[int] = [1, 3, 5, 10],\n    max_grade: int = 4\n) -> Dict[str, Dict[int, float]]:\n    \"\"\"\n    Вычисляет все метрики для разных значений k.\n    \n    Args:\n        relevance: Список оценок релевантности для результатов поиска\n        k_values: Список значений k для вычисления метрик\n        max_grade: Максимальная оценка релевантности (для ERR)\n    \n    Returns:\n        Словарь {метрика: {k: значение}}\n    \"\"\"\n    metrics = {\n        'P': {},\n        'DCG': {},\n        'NDCG': {},\n        'ERR': {}\n    }\n    \n    for k in k_values:\n        metrics['P'][k] = precision_at_k(relevance, k)\n        metrics['DCG'][k] = dcg_at_k(relevance, k)\n        metrics['NDCG'][k] = ndcg_at_k(relevance, k)\n        metrics['ERR'][k] = err_at_k(relevance, k, max_grade)\n    \n    return metrics\n\n\ndef average_metrics(\n    all_queries_relevance: List[List[int]],\n    k_values: List[int] = [1, 3, 5, 10],\n    max_grade: int = 4\n) -> Dict[str, Dict[int, float]]:\n    \"\"\"\n    Усредняет метрики по множеству запросов.\n    \n    Args:\n        all_queries_relevance: Список релевантностей для разных запросов\n        k_values: Список значений k\n        max_grade: Максимальная оценка релевантности\n    \n    Returns:\n        Усредненные метрики\n    \"\"\"\n    if not all_queries_relevance:\n        return {}\n    \n    # Инициализация суммарных метрик\n    sum_metrics = {\n        'P': {k: 0.0 for k in k_values},\n        'DCG': {k: 0.0 for k in k_values},\n        'NDCG': {k: 0.0 for k in k_values},\n        'ERR': {k: 0.0 for k in k_values}\n    }\n    \n    # Суммируем метрики для каждого запроса\n    for relevance in all_queries_relevance:\n        query_metrics = calculate_all_metrics(relevance, k_values, max_grade)\n        \n        for metric_name in sum_metrics:\n            for k in k_values:\n                sum_metrics[metric_name][k] += query_metrics[metric_name][k]\n    \n    # Усредняем\n    num_queries = len(all_queries_relevance)\n    avg_metrics = {\n        metric_name: {\n            k: value / num_queries\n            for k, value in k_values_dict.items()\n        }\n        for metric_name, k_values_dict in sum_metrics.items()\n    }\n    \n    return avg_metrics\n\n\ndef format_metrics_table(metrics: Dict[str, Dict[int, float]]) -> str:\n    \"\"\"\n    Форматирует метрики в виде текстовой таблицы.\n    \n    Args:\n        metrics: Словарь метрик\n    \n    Returns:\n        Форматированная строка таблицы\n    \"\"\"\n    if not metrics:\n        return \"No metrics available\"\n    \n    # Получаем все k значения\n    k_values = sorted(list(metrics[list(metrics.keys())[0]].keys()))\n    \n    # Формируем заголовок\n    header = \"Metric\\t\" + \"\\t\".join(f\"@{k}\" for k in k_values)\n    lines = [header, \"-\" * len(header)]\n    \n    # Добавляем строки для каждой метрики\n    for metric_name in ['P', 'DCG', 'NDCG', 'ERR']:\n        if metric_name in metrics:\n            values = [f\"{metrics[metric_name][k]:.4f}\" for k in k_values]\n            lines.append(f\"{metric_name}\\t\" + \"\\t\".join(values))\n    \n    return \"\\n\".join(lines)\n
+"""
+Метрики качества информационного поиска.
+
+Реализованы метрики:
+- Precision@k (P@k)
+- Discounted Cumulative Gain (DCG)
+- Normalized DCG (NDCG)
+- Expected Reciprocal Rank (ERR)
+
+Используются для оценки качества ранжирования результатов поиска.
+"""
+import math
+from typing import List, Dict, Tuple
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
+def precision_at_k(relevance: List[int], k: int) -> float:
+    """
+    Precision@k - доля релевантных документов в топ-k выдаче.
+    
+    Args:
+        relevance: Список оценок релевантности (0 - нерелевантен, >= 1 - релевантен)
+        k: Количество рассматриваемых документов
+    
+    Returns:
+        P@k в диапазоне [0, 1]
+    """
+    if k <= 0 or not relevance:
+        return 0.0
+    
+    k = min(k, len(relevance))
+    relevant_count = sum(1 for rel in relevance[:k] if rel > 0)
+    
+    return relevant_count / k
+
+
+def dcg_at_k(relevance: List[int], k: int) -> float:
+    """
+    Discounted Cumulative Gain@k - учитывает позицию документов.
+    
+    DCG@k = sum(rel_i / log2(i + 1)) for i in [0, k-1]
+    
+    Args:
+        relevance: Список оценок релевантности (неотрицательные числа)
+        k: Количество рассматриваемых документов
+    
+    Returns:
+        DCG@k значение
+    """
+    if k <= 0 or not relevance:
+        return 0.0
+    
+    k = min(k, len(relevance))
+    dcg = 0.0
+    
+    for i in range(k):
+        # i+2 потому что log2(1) = 0, поэтому начинаем с log2(2)
+        dcg += relevance[i] / math.log2(i + 2)
+    
+    return dcg
+
+
+def ndcg_at_k(relevance: List[int], k: int) -> float:
+    """
+    Normalized Discounted Cumulative Gain@k - DCG нормализованный к идеальной выдаче.
+    
+    NDCG@k = DCG@k / IDCG@k
+    
+    Args:
+        relevance: Список оценок релевантности
+        k: Количество рассматриваемых документов
+    
+    Returns:
+        NDCG@k в диапазоне [0, 1]
+    """
+    if k <= 0 or not relevance:
+        return 0.0
+    
+    dcg = dcg_at_k(relevance, k)
+    
+    # Идеальная выдача - сортировка по убыванию релевантности
+    ideal_relevance = sorted(relevance, reverse=True)
+    idcg = dcg_at_k(ideal_relevance, k)
+    
+    if idcg == 0.0:
+        return 0.0
+    
+    return dcg / idcg
+
+
+def err_at_k(relevance: List[int], k: int, max_grade: int = 4) -> float:
+    """
+    Expected Reciprocal Rank@k - вероятностная метрика.
+    
+    Моделирует вероятность того, что пользователь найдет релевантный документ
+    на каждой позиции, учитывая, что он мог удовлетвориться предыдущими.
+    
+    ERR@k = sum(1/(i+1) * P(user stops at position i))
+    
+    Args:
+        relevance: Список оценок релевантности (0 до max_grade)
+        k: Количество рассматриваемых документов
+        max_grade: Максимальная оценка релевантности (для нормализации)
+    
+    Returns:
+        ERR@k значение
+    """
+    if k <= 0 or not relevance or max_grade == 0:
+        return 0.0
+    
+    k = min(k, len(relevance))
+    err = 0.0
+    p = 1.0  # Вероятность того, что пользователь продолжает просмотр
+    
+    for i in range(k):
+        # Нормализуем релевантность к [0, 1]
+        # R_i = (2^rel - 1) / (2^max_grade)
+        r_i = (2 ** relevance[i] - 1) / (2 ** max_grade)
+        
+        # Вклад i-й позиции
+        err += p * r_i / (i + 1)
+        
+        # Обновляем вероятность продолжения просмотра
+        p *= (1 - r_i)
+    
+    return err
+
+
+def calculate_all_metrics(
+    relevance: List[int],
+    k_values: List[int] = [1, 3, 5, 10],
+    max_grade: int = 4
+) -> Dict[str, Dict[int, float]]:
+    """
+    Вычисляет все метрики для разных значений k.
+    
+    Args:
+        relevance: Список оценок релевантности для результатов поиска
+        k_values: Список значений k для вычисления метрик
+        max_grade: Максимальная оценка релевантности (для ERR)
+    
+    Returns:
+        Словарь {метрика: {k: значение}}
+    """
+    metrics = {
+        'P': {},
+        'DCG': {},
+        'NDCG': {},
+        'ERR': {}
+    }
+    
+    for k in k_values:
+        metrics['P'][k] = precision_at_k(relevance, k)
+        metrics['DCG'][k] = dcg_at_k(relevance, k)
+        metrics['NDCG'][k] = ndcg_at_k(relevance, k)
+        metrics['ERR'][k] = err_at_k(relevance, k, max_grade)
+    
+    return metrics
+
+
+def average_metrics(
+    all_queries_relevance: List[List[int]],
+    k_values: List[int] = [1, 3, 5, 10],
+    max_grade: int = 4
+) -> Dict[str, Dict[int, float]]:
+    """
+    Усредняет метрики по множеству запросов.
+    
+    Args:
+        all_queries_relevance: Список релевантностей для разных запросов
+        k_values: Список значений k
+        max_grade: Максимальная оценка релевантности
+    
+    Returns:
+        Усредненные метрики
+    """
+    if not all_queries_relevance:
+        return {}
+    
+    # Инициализация суммарных метрик
+    sum_metrics = {
+        'P': {k: 0.0 for k in k_values},
+        'DCG': {k: 0.0 for k in k_values},
+        'NDCG': {k: 0.0 for k in k_values},
+        'ERR': {k: 0.0 for k in k_values}
+    }
+    
+    # Суммируем метрики для каждого запроса
+    for relevance in all_queries_relevance:
+        query_metrics = calculate_all_metrics(relevance, k_values, max_grade)
+        
+        for metric_name in sum_metrics:
+            for k in k_values:
+                sum_metrics[metric_name][k] += query_metrics[metric_name][k]
+    
+    # Усредняем
+    num_queries = len(all_queries_relevance)
+    avg_metrics = {
+        metric_name: {
+            k: value / num_queries
+            for k, value in k_values_dict.items()
+        }
+        for metric_name, k_values_dict in sum_metrics.items()
+    }
+    
+    return avg_metrics
+
+
+def format_metrics_table(metrics: Dict[str, Dict[int, float]]) -> str:
+    """
+    Форматирует метрики в виде текстовой таблицы.
+    
+    Args:
+        metrics: Словарь метрик
+    
+    Returns:
+        Форматированная строка таблицы
+    """
+    if not metrics:
+        return "No metrics available"
+    
+    # Получаем все k значения
+    k_values = sorted(list(metrics[list(metrics.keys())[0]].keys()))
+    
+    # Формируем заголовок
+    header = "Metric\t" + "\t".join(f"@{k}" for k in k_values)
+    lines = [header, "-" * len(header)]
+    
+    # Добавляем строки для каждой метрики
+    for metric_name in ['P', 'DCG', 'NDCG', 'ERR']:
+        if metric_name in metrics:
+            values = [f"{metrics[metric_name][k]:.4f}" for k in k_values]
+            lines.append(f"{metric_name}\t" + "\t".join(values))
+    
+    return "\n".join(lines)
